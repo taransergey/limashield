@@ -1,115 +1,131 @@
-# LimaShield — фильтр GPS-спуфинга для Android
+# LimaShield — GPS anti-spoofing filter for Android
 
-*From Tarik for motorcycling.* Интерфейс: английский (по умолчанию), украинский, русский — по локали системы. Технический лог — английский (единый язык для разбора пересланных логов).
+*From Tarik for motorcycling.* UI: English (default), Ukrainian, Russian — follows the system locale. The technical log is English-only: a single language keeps shared field logs easy to analyze.
 
-Системный фильтр против GNSS-спуфинга комплексов РЭБ («Лима»): детектирует подмену
-сигнала, автоматически переключает всю систему на сетевое позиционирование (вышки/Wi-Fi)
-через mock-провайдеры, при полной потере источников замораживает последнюю доверенную
-позицию. Все навигационные приложения (OsmAnd, Google Maps, Waze) получают
-отфильтрованные координаты без изменений в них самих.
+A system-wide filter against GNSS spoofing by electronic-warfare systems (the "Lima" pattern): it detects signal forgery, automatically switches the whole phone to network positioning (cell towers / Wi-Fi) through Android mock location providers, and freezes the last trusted position when no trusted source is left. Every navigation app (OsmAnd, Google Maps, Waze) receives filtered coordinates with zero changes on their side.
 
-## Сборка
+## Building
 
-- JDK 17 (`gradle.properties` → `org.gradle.java.home`, поправьте путь при необходимости)
-- Android SDK (путь в `local.properties`)
+- JDK 17 (`gradle.properties` → `org.gradle.java.home`, adjust the path if needed)
+- Android SDK (path in `local.properties`)
 
 ```
-gradlew :app:testDebugUnitTest   # юнит-тесты детектора и FSM
+gradlew :app:testDebugUnitTest   # detector & FSM unit tests
 gradlew :app:assembleDebug       # APK
-gradlew :app:installDebug        # установка на подключённый телефон
+gradlew :app:installDebug        # install on a connected phone
 ```
 
-## Настройка на телефоне (onboarding)
+Prebuilt APKs: see [Releases](../../releases).
 
-При первом запуске открывается **мастер настройки** (4 шага с живыми галочками,
-кнопки ведут прямо в нужные экраны, подсказки — под конкретную прошивку:
-realme/Oppo, Xiaomi, Samsung, AOSP). Он же доступен по кнопке «Mock-доступ».
+## Phone setup (onboarding)
 
-Шаги, которые мастер проводит:
-1. Разрешение на геолокацию (+уведомления).
-2. Режим разработчика: «О телефоне» → 7 раз по «Номер сборки».
-3. Mock-провайдер: настройки разработчика → «Приложение для фиктивных местоположений» → LimaShield.
-   Через adb: `adb shell appops set com.limashield android:mock_location allow`
-4. Исключение из оптимизации батареи (рекомендуется).
+The first launch opens a **setup wizard** — 4 steps with live checkmarks; buttons deep-link
+into the right settings screens, with hints tailored to the ROM (realme/Oppo, Xiaomi,
+Samsung, AOSP). It is also available via the "Mock access" button.
 
-Дальше — тумблер «Запустить»; плитка в шторке — вкл/выкл одним тапом.
+The steps it walks through:
+1. Location permission (+ notifications).
+2. Developer mode: About phone → tap "Build number" 7 times.
+3. Mock location provider: developer options → "Select mock location app" → LimaShield.
+   Via adb: `adb shell appops set com.limashield android:mock_location allow`
+4. Battery optimization exemption (recommended). On realme/ColorOS also allow
+   background activity and auto-launch — the stock killer is aggressive.
 
-## Архитектура
+Then hit the Start toggle; the Quick Settings tile toggles the filter with one tap.
+
+## Architecture
 
 ```
 LocationFilterService (foreground, type=location)
-  GPS_PROVIDER (1 c)  ──┐
-  NETWORK_PROVIDER (5 c)├─► SpoofDetector (К1–К5) + FilterFsm ─► MockOutput (gps, fused, FLP)
-  GnssStatus (спутники)──┘            │
-                                      ▼
-                            EventLog (кольцо 500) + ServiceBus (StateFlow) ─► UI / QS tile
+  GPS_PROVIDER (1 s)    ──┐
+  NETWORK_PROVIDER (5 s)  ├─► SpoofDetector (C1–C8) + FilterFsm ─► MockOutput (gps, fused, FLP)
+  GnssStatus (satellites)──┘            │
+                                        ▼
+                EventLog (ring 500) + FieldRecorder (daily files) + ServiceBus ─► UI / QS tile
 ```
 
-Ядро (`core/`) — чистый Kotlin без Android: `SpoofDetector`, `FilterFsm`, `Thresholds`,
-`GeoMath`, покрыто юнит-тестами на синтетических потоках (`app/src/test`).
+The core (`core/`) is pure Kotlin with no Android imports: `SpoofDetector`, `FilterFsm`,
+`Thresholds`, `GeoMath` — covered by unit tests on synthetic fix streams (`app/src/test`).
 
-### Состояния
+### States
 
-| Состояние | Что отдаётся системе | Мок |
+| State | What the system receives | Mock |
 |---|---|---|
-| `TRUSTED` | ничего — приложения читают реальные провайдеры | выкл |
-| `SPOOFED` | сетевые фиксы с честной accuracy | gps+fused |
-| `RECOVERING` | сетевые фиксы; gps уже свободен (пробация 45 с) | fused |
-| `BLIND` | замороженная позиция, accuracy +10 м/с до 5000 м | gps+fused |
+| `TRUSTED` | nothing — apps read the real providers | off |
+| `SPOOFED` | network fixes with honest accuracy | gps+fused |
+| `RECOVERING` | network fixes; gps already released (45 s probation) | fused |
+| `BLIND` | frozen position, accuracy grows +10 m/s up to 5000 m | gps+fused |
 
-### Критерии детекции (любой ⇒ SPOOFED после 2 фиксов подряд)
+### Detection criteria (any one ⇒ SPOOFED after 2 consecutive fixes)
 
-1. **К1** — GNSS vs сеть > 10 км при возрасте сетевого фикса < 60 с
-2. **К2** — телепортация > 100 км при dt < 60 с
-3. **К3** — скорость > 300 км/ч на ≥3 фиксах подряд
-4. **К4** — фикс в bounding box Лимы/Перу при доверенной позиции вне его
-5. **К5** — круговое движение: постоянная скорость (CV<5%) + монотонный поворот bearing
+1. **C1** — GNSS vs network divergence > 10 km with a network fix younger than 60 s
+2. **C2** — teleport: > 100 km with dt < 60 s
+3. **C3** — impossible speed: > 300 km/h on ≥3 consecutive fixes
+4. **C4** — fix inside the Lima/Peru bounding box while the trusted position is outside it
+5. **C5** — circular motion: near-constant speed (CV < 5%) + monotonic bearing turn
+6. **C6** — drag-off: adaptive divergence — `max(600 m, 4 × network accuracy) + fix age × 42 m/s`.
+   Tuned on a real recording of a slow pull (0→90 km/h over 2 minutes)
+7. **C7** — synthetic track: speed identical bit-for-bit on 4 consecutive fixes at > 3 m/s
+   (a real chip never repeats floats; the real Lima froze 25.005072 m/s for 5 fixes)
+8. **C8** — GPS time warp: fix time differs from system time by > 2 minutes
+   (the real Lima sends GPS time ~550 days in the future). Fires **instantly**, no 2-fix confirmation
 
-К2–К5 работают без интернета: детекция не зависит от связи, от связи зависит только
-качество fallback-позиции.
+C2–C5, C7 and C8 work with no internet: detection never depends on connectivity —
+only the fallback position quality does.
 
-## Сознательные отклонения от ТЗ (важно)
+## Deliberate deviations from the original spec
 
-1. **Мок не постоянный, а только в SPOOFED/BLIND.** Включённый тест-провайдер `gps`
-   на современных Android *полностью замещает* реальный GPS — в том числе для самого
-   фильтра (та же петля, что с fused, только фатальнее). Поэтому passthrough в TRUSTED
-   реализован выключенным моком: система и так живёт на реальном GNSS. Бонусы: нулевой
-   overhead в мирное время, банки не видят `isFromMockProvider`, пока спуфинга нет.
-2. **`network`-провайдер не мокается.** Он не подвержен спуфингу и является единственным
-   достоверным входом фильтра — его подмена ослепила бы сам фильтр, а потребителям дала
-   бы ровно те же координаты.
-3. **Peek-механизм.** Пока gps замокан, реальный GNSS не виден, поэтому каждые 45 с
-   (настраивается) фильтр на ≤10 с снимает мок с gps и проверяет сигнал. При спуфинге
-   мок возвращается за 1–3 с после первого фикса; fused-потребители (Google Maps)
-   при этом не затронуты вовсе. Если прошивка отдаёт реальные фиксы и под моком
-   (встречается), peek отключается автоматически.
-4. **RECOVERING** — явное четвёртое состояние (пробация выхода из SPOOFED), в ТЗ оно
-   было неявным внутри гистерезиса.
+1. **Mock is engaged only in SPOOFED/BLIND, not permanently.** An enabled `gps` test
+   provider on modern Android *fully replaces* the real GPS — including for the filter
+   itself (`gps provider request = OFF`, verified via dumpsys). So TRUSTED passthrough
+   is implemented as mock-off: the system already lives on real GNSS. Bonus: zero
+   overhead in peacetime, and banking apps never see `isFromMockProvider` while the
+   signal is clean.
+2. **The `network` provider is never mocked.** It is not spoofable and is the filter's
+   only trusted input — mocking it would blind the filter while giving consumers the
+   exact same coordinates.
+3. **The peek mechanism.** While gps is mocked the real GNSS is invisible, so every 45 s
+   (configurable) the filter releases the gps mock for ≤10 s and samples the real signal.
+   Under active spoofing the mock returns 1–3 s after the first fix; fused consumers
+   (Google Maps) are not affected at all. If the ROM keeps delivering real fixes under
+   an active mock (some do), peeking disables itself.
+4. **RECOVERING** is an explicit fourth state (the exit probation), which the original
+   spec kept implicit inside the hysteresis.
 
-## Проверка без РЭБ
+## Testing without EW
 
-Настройки → Отладка → **Симуляция спуфинга**: входной GNSS подменяется кругом над Лимой
-на ~200 км/ч. Ожидаемо: детекция ≤2 с, карта в OsmAnd/Google Maps остаётся на сетевой
-позиции, в логе `TRUSTED → SPOOFED: К1/К2/К4`. После выключения — восстановление через
-peek + пробацию 45 с.
+Settings → Debug → **Spoofing simulation**: the GNSS input is replaced with a circle over
+Lima at ~200 km/h. Expected: detection within ≤2 s, the map in OsmAnd/Google Maps stays
+on the network position, the log shows `TRUSTED → SPOOFED: C1/C2/C4`. After switching it
+off — recovery through peek + 45 s probation.
 
-На эмуляторе: телеметрия через `adb emu geo fix` или GPX playback в Extended Controls.
+On the emulator: `adb emu geo fix` or GPX playback in Extended Controls.
 
-## Полевые заметки
+## Field notes
 
-- BLIND в глуши без сети — норма, не ошибка (NETWORK_PROVIDER требует онлайн).
-- При включённом моке банковские приложения могут ругаться на фиктивные координаты —
-  быстрый выключатель в шторке (в TRUSTED мок и так снят).
-- «Поделиться логом» на главном экране формирует txt-файл (события + сырой поток обоих
-  провайдеров за ~15 минут) и открывает системный share (Telegram, почта — адрес
-  разработчика подставляется автоматически). Сырой поток дублируется в logcat, тег `LimaShieldRaw`.
-- Известное ограничение: если в BLIND уехать > 5 км от замороженной позиции без сети,
-  автомат ждёт сеть (порог настраивается).
+- BLIND in the middle of nowhere with no coverage is normal, not a bug
+  (NETWORK_PROVIDER needs connectivity).
+- With the mock engaged some banking apps may refuse to work
+  (`isFromMockProvider`) — quick kill switch in the QS tile; in TRUSTED the mock is off anyway.
+- **Share log** on the main screen builds a zip of the day's field files (events, raw fix
+  streams of both providers, crash reports, a snapshot of the current session) and opens
+  the system share sheet. The raw stream is duplicated to logcat, tag `LimaShieldRaw`.
+- One-tap field markers ("map jumped", "false alarm", "no position", plus "problem"/"OK"
+  right in the notification) write a full state snapshot into the log — usable with gloves on.
+- Vendor killers: on realme/ColorOS the standard battery exemption is **not enough** —
+  also allow background activity and auto-launch, otherwise the system may stop the
+  service minutes after the screen goes off (observed in the field). If that happens the
+  filter restarts itself and raises a loud alert when it can't.
+- Known limitation: in BLIND, moving > 5 km away from the frozen position with no network
+  keeps the FSM waiting for a network fix (threshold configurable).
 
-## Этапы
+## Milestones
 
-- [x] M1 — каркас: сервис, оба потока фиксов, лог, нотификация
-- [x] M2 — детектор К1–К5 + FSM + юнит-тесты сценариев ТЗ §8
-- [x] M3 — mock-выход gps/fused/FLP, onboarding, симулятор спуфинга
-- [x] M4 — QS tile, настройки порогов, шаринг лога, локализация en/uk/ru
-- [ ] M5 — поле: запись сырых потоков в GPX, тюнинг порогов по реальной «Лиме», C/N0-эвристики
+- [x] M1 — skeleton: foreground service, both fix streams, log, notification
+- [x] M2 — detector C1–C5 + FSM + unit tests for all spec scenarios
+- [x] M3 — mock output gps/fused/FLP, onboarding, spoofing simulator
+- [x] M4 — QS tile, threshold settings, log sharing, en/uk/ru localization
+- [x] M5 — field kit: daily on-disk recording, one-tap markers, telemetry (C/N0, battery);
+      thresholds tuned on real Lima recordings — C6, C7 and C8 were born from them
+- [ ] Next: C/N0-based jamming heuristics (the loud-noise signature: ~40 dB-Hz with
+      0 satellites used), release signing
