@@ -40,6 +40,16 @@
             app:title="@string/pref_blind_recover"
             app:defaultValue="5"
             app:useSimpleSummaryProvider="true" />
+        <EditTextPreference
+            app:key="jammed_after_s"
+            app:title="@string/pref_jammed_after"
+            app:defaultValue="90"
+            app:useSimpleSummaryProvider="true" />
+        <SwitchPreferenceCompat
+            app:key="jammed_fallback"
+            app:title="@string/pref_jammed_fallback"
+            app:summary="@string/pref_jammed_fallback_sum"
+            app:defaultValue="true" />
     </PreferenceCategory>
 
     <PreferenceCategory app:title="@string/prefs_cat_peek">

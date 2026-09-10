@@ -30,4 +30,6 @@ object Prefs {
     fun freezeInBlind(sp: SharedPreferences) = sp.getBoolean("freeze_blind", true)
     fun simulateSpoof(sp: SharedPreferences) = sp.getBoolean("simulate_spoof", false)
     fun fieldRecording(sp: SharedPreferences) = sp.getBoolean("field_recording", true)
+    fun jammedAfterMs(sp: SharedPreferences) = (sp.d("jammed_after_s", 90.0) * 1000).toLong()
+    fun jammedFallback(sp: SharedPreferences) = sp.getBoolean("jammed_fallback", true)
 }

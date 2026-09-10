@@ -368,6 +368,18 @@ class LocationFilterService : Service() {
                     "No GNSS fixes for ${silentMs / 1000} s while $sats satellites visible — possible jamming",
                 )
             }
+            // Field lesson 2026-09-10: staying in TRUSTED under jamming leaves apps
+            // positionless and starves Google NLP/FLP (our permanent gps request makes
+            // GMS wait for GPS forever). Fall back to cell towers via the mock.
+            if (silentMs > Prefs.jammedAfterMs(sp) && Prefs.jammedFallback(sp) &&
+                fsm.state == FilterState.TRUSTED
+            ) {
+                val r = fsm.onGnssSilence(now)
+                if (r.state == FilterState.JAMMED) {
+                    ServiceBus.update { it.copy(gnssSilentSec = null) }
+                }
+                applyResult(r, fromGnss = false)
+            }
         } else if (silentMs < 5_000) {
             ServiceBus.update { it.copy(gnssSilentSec = null) }
         }
@@ -553,6 +565,7 @@ class LocationFilterService : Service() {
             FilterState.SPOOFED -> R.string.state_spoofed_title
             FilterState.RECOVERING -> R.string.state_recovering_title
             FilterState.BLIND -> R.string.state_blind_title
+            FilterState.JAMMED -> R.string.state_jammed_title
         }
 
         fun stateDetailRes(state: FilterState): Int = when (state) {
@@ -560,6 +573,7 @@ class LocationFilterService : Service() {
             FilterState.SPOOFED -> R.string.state_spoofed_detail
             FilterState.RECOVERING -> R.string.state_recovering_detail
             FilterState.BLIND -> R.string.state_blind_detail
+            FilterState.JAMMED -> R.string.state_jammed_detail
         }
     }
 }

@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.6.0 — 2026-09-10
+New JAMMED state, born from the evening test ride (5+ hours of total GNSS
+suppression: zero fixes with 26–39 satellites visible):
+- **Cell fallback under jamming**: when GNSS produces no fixes for 90 s (configurable)
+  while satellites are visible and a network position is available, the filter engages
+  the mock and serves the network position — purple "JAMMING — cell fallback" card.
+- This also fixes the field-discovered starvation: staying in TRUSTED under jamming,
+  the filter's permanent HIGH_ACCURACY gps request made Google location services wait
+  for GPS forever, so fused/network consumers (OsmAnd) got almost no positions —
+  the rider saw "navigation works only with the filter OFF". Engaging the mock
+  releases the real gps provider and NLP wakes up.
+- Exit as usual: peek → probation → TRUSTED; spoofed fixes → SPOOFED; network loss → BLIND.
+- Toggle and threshold in Settings ("Cell fallback under jamming", "JAMMED after GNSS silence").
+
 ## 0.5.2 — 2026-09-10
 Hardening after the first external security review:
 - **The shield no longer stays silent**: if the gps mock cannot engage (mock access

@@ -275,6 +275,7 @@ class MainActivity : AppCompatActivity() {
                 FilterState.SPOOFED -> Color.parseColor("#C77800")
                 FilterState.RECOVERING -> Color.parseColor("#1565C0")
                 FilterState.BLIND -> Color.parseColor("#C62828")
+                FilterState.JAMMED -> Color.parseColor("#6A1B9A")
             }
             title = getString(LocationFilterService.stateTitleRes(ui.state))
             detail = buildString {

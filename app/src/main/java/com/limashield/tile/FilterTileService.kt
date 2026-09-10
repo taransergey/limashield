@@ -67,6 +67,7 @@ class FilterTileService : TileService() {
         FilterState.SPOOFED -> R.string.tile_spoofed
         FilterState.RECOVERING -> R.string.tile_recovering
         FilterState.BLIND -> R.string.tile_blind
+        FilterState.JAMMED -> R.string.tile_jammed
     }
 
     private fun openApp() {

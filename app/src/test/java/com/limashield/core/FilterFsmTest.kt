@@ -347,6 +347,91 @@ class FilterFsmTest {
     }
 
     @Test
+    fun `глушение уводит в JAMMED и кормит сетевой позицией`() {
+        val s = Sim()
+        val (lat, lon) = cleanDrive(s, 10)
+        // the service confirmed long GNSS silence with satellites visible
+        s.advance(90L)
+        s.net(lat, lon)
+        val r = s.silence()
+        assertEquals(FilterState.JAMMED, r.state)
+        assertEquals(MockMode.FULL, r.mockMode)
+        assertNotNull(r.emit)
+        assertTrue(GeoMath.haversineM(r.emit!!.lat, r.emit.lon, lat, lon) < 500.0)
+    }
+
+    @Test
+    fun `глушение без свежей сети не переключает из TRUSTED`() {
+        val s = Sim()
+        var lat = K_LAT
+        var lon = K_LON
+        repeat(10) {
+            s.advance()
+            val p = Scenario.move(lat, lon, 0.0, 16.7)
+            lat = p.first; lon = p.second
+            s.gnss(lat, lon, speed = noisy(16.7, it), bearing = 0f)
+            s.tick()
+        }
+        s.advance(600L) // network never appeared
+        assertEquals(FilterState.TRUSTED, s.silence().state)
+    }
+
+    @Test
+    fun `выход из JAMMED в TRUSTED через пробацию когда GNSS вернулся`() {
+        val s = Sim()
+        var (lat, lon) = cleanDrive(s, 10)
+        s.advance(90L)
+        s.net(lat, lon)
+        s.silence()
+        assertEquals(FilterState.JAMMED, s.fsm.state)
+
+        // GNSS is back and converges with the network
+        s.advance()
+        var r = s.gnss(lat, lon, speed = 5f)
+        assertEquals(FilterState.RECOVERING, r.state)
+        repeat(46) {
+            s.advance()
+            val p = Scenario.move(lat, lon, 0.0, 5.0)
+            lat = p.first; lon = p.second
+            r = s.gnss(lat, lon, speed = noisy(5.0, it), bearing = 0f)
+            if (it % 5 == 0) s.net(lat, lon)
+            s.tick()
+        }
+        assertEquals(FilterState.TRUSTED, s.fsm.state)
+        assertEquals(MockMode.OFF, r.mockMode)
+    }
+
+    @Test
+    fun `спуф-фикс в JAMMED уводит в SPOOFED`() {
+        val s = Sim()
+        val (lat, lon) = cleanDrive(s, 10)
+        s.advance(90L)
+        s.net(lat, lon)
+        s.silence()
+        assertEquals(FilterState.JAMMED, s.fsm.state)
+
+        s.advance()
+        val r = s.gnss(L_LAT, L_LON)
+        assertEquals(FilterState.SPOOFED, r.state)
+    }
+
+    @Test
+    fun `потеря сети в JAMMED замораживает позицию`() {
+        val s = Sim()
+        val (lat, lon) = cleanDrive(s, 10)
+        s.advance(90L)
+        s.net(lat, lon)
+        s.silence()
+        assertEquals(FilterState.JAMMED, s.fsm.state)
+
+        repeat(31) { s.advance(); s.tick() }
+        assertEquals(FilterState.BLIND, s.fsm.state)
+        val emit = s.lastResult!!.emit
+        assertNotNull(emit)
+        assertTrue(GeoMath.haversineM(emit!!.lat, emit.lon, lat, lon) < 500.0)
+    }
+
+    @Test
     fun `в SPOOFED тик поддерживает выдачу сетевой позиции`() {
         val s = Sim()
         val (lat, lon) = enterSpoofed(s)

@@ -23,6 +23,8 @@
     <string name="state_recovering_detail">GNSS похож на правду — пробация</string>
     <string name="state_blind_title">ПОЗИЦИЯ ЗАМОРОЖЕНА</string>
     <string name="state_blind_detail">Нет достоверных источников. Отдаю последнюю позицию</string>
+    <string name="state_jammed_title">ГЛУШЕНИЕ — веду по вышкам</string>
+    <string name="state_jammed_detail">GNSS подавлен (фиксов нет, спутники видны). Наружу идёт сетевая позиция</string>
     <string name="peek_hint">Peek: проверяю реальный GNSS…</string>
     <string name="gnss_silent">⚠ GNSS молчит %1$d с при %2$d видимых спутниках — глушение?</string>
     <string name="mock_hint">Мок активен: %1$s</string>
@@ -84,6 +86,7 @@
     <string name="tile_spoofed">по вышкам</string>
     <string name="tile_recovering">проверка</string>
     <string name="tile_blind">заморожен</string>
+    <string name="tile_jammed">глушение</string>
 
     <string name="onb_title">Настройка LimaShield</string>
     <string name="onb_intro">Чтобы фильтр защищал все приложения телефона, Android требует одноразовую настройку. Идите по шагам — галочки обновляются сами.</string>
@@ -119,6 +122,9 @@
     <string name="pref_recovery">Гистерезис выхода из SPOOFED, с</string>
     <string name="pref_blind_after">BLIND после молчания сети, с</string>
     <string name="pref_blind_recover">Возврат из BLIND: радиус от заморозки, км</string>
+    <string name="pref_jammed_after">JAMMED после тишины GNSS, с</string>
+    <string name="pref_jammed_fallback">Вести по вышкам при глушении</string>
+    <string name="pref_jammed_fallback_sum">Когда GNSS не даёт фиксов при видимых спутниках — отдавать сетевую позицию (заодно будит геолокацию Google)</string>
     <string name="prefs_cat_peek">Peek — проверка GNSS под моком</string>
     <string name="pref_peek_interval">Интервал peek, с</string>
     <string name="pref_peek_interval_sum">Как часто снимать мок с gps для проверки реального сигнала</string>

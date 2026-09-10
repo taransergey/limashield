@@ -46,6 +46,8 @@ class Sim(t: Thresholds = Thresholds()) {
 
     fun tick(): FsmResult = record(fsm.onTick(now))
 
+    fun silence(): FsmResult = record(fsm.onGnssSilence(now))
+
     private fun record(r: FsmResult): FsmResult {
         lastResult = r
         states += r.state

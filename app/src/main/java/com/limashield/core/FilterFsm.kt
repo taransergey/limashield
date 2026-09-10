@@ -1,6 +1,6 @@
 package com.limashield.core
 
-enum class FilterState { TRUSTED, SPOOFED, RECOVERING, BLIND }
+enum class FilterState { TRUSTED, SPOOFED, RECOVERING, BLIND, JAMMED }
 
 /**
  * Desired mock output mode.
@@ -36,7 +36,12 @@ data class FsmResult(
  * TRUSTED    — GNSS agrees with network and looks plausible; mock is off.
  * SPOOFED    — the detector fired (confirmed by ≥2 fixes); network fixes go out.
  * RECOVERING — GNSS looks trustworthy again; probation is running (45 s hysteresis).
- * BLIND      — spoofing active and no network for >30 s: frozen position, accuracy grows.
+ * BLIND      — no trusted source and no network for >30 s: frozen position, accuracy grows.
+ * JAMMED     — GNSS produces no fixes at all while satellites are visible (suppression):
+ *              network fixes go out. Field lesson 2026-09-10: staying in TRUSTED under
+ *              jamming both leaves apps positionless AND starves Google NLP/FLP, because
+ *              our permanent HIGH_ACCURACY gps request makes GMS wait for GPS forever.
+ *              Engaging the mock releases the real gps provider and NLP wakes up.
  */
 class FilterFsm(
     private val t: Thresholds,
@@ -127,8 +132,34 @@ class FilterFsm(
                     ev += "GNSS check: spoofing continues ($verdict)"
                 }
             }
+
+            FilterState.JAMMED -> {
+                // GNSS came back: judge it exactly like a SPOOFED peek
+                if (verdict.isSpoofed) {
+                    moveTo(FilterState.SPOOFED, ev, "GNSS is back but spoofed: $verdict")
+                    spoofStreak = t.spoofConfirmFixes
+                } else if (converged(fix, nowMs)) {
+                    recoveringSinceMs = fix.timeMs
+                    moveTo(FilterState.RECOVERING, ev, "GNSS is back and plausible, probation ${t.recoveryHoldMs / 1000} s")
+                } else {
+                    ev += "GNSS check: criteria clean, but position diverges from reference"
+                }
+            }
         }
         return FsmResult(state, emitFor(nowMs), modeFor(state), ev, verdict)
+    }
+
+    /**
+     * The service reports confirmed GNSS silence (no fixes for a long time while
+     * satellites are visible). With a reasonably fresh network position we fall back
+     * to cell towers — same output contract as SPOOFED, different cause.
+     */
+    fun onGnssSilence(nowMs: Long): FsmResult {
+        val ev = mutableListOf<String>()
+        if (state == FilterState.TRUSTED && netAgeMs(nowMs) < t.netFreshMs * 3) {
+            moveTo(FilterState.JAMMED, ev, "no GNSS fixes while satellites visible — jamming, cell fallback")
+        }
+        return FsmResult(state, emitFor(nowMs), modeFor(state), ev)
     }
 
     fun onNetwork(fix: Fix, nowMs: Long): FsmResult {
@@ -137,7 +168,7 @@ class FilterFsm(
         val ev = mutableListOf<String>()
         when (state) {
             FilterState.TRUSTED -> Unit
-            FilterState.SPOOFED, FilterState.RECOVERING -> lastGood = fix
+            FilterState.SPOOFED, FilterState.RECOVERING, FilterState.JAMMED -> lastGood = fix
             FilterState.BLIND -> {
                 frozen = null
                 lastGood = fix
@@ -152,7 +183,7 @@ class FilterFsm(
         when (state) {
             FilterState.TRUSTED -> Unit
 
-            FilterState.SPOOFED -> {
+            FilterState.SPOOFED, FilterState.JAMMED -> {
                 if (netAgeMs(nowMs) > t.blindAfterNoNetMs) {
                     frozen = lastGood?.copy(timeMs = nowMs)
                     frozenAtMs = nowMs
@@ -185,7 +216,7 @@ class FilterFsm(
     private fun emitFor(nowMs: Long): Fix? = when (state) {
         FilterState.TRUSTED -> null // mock is off, the system runs on real GNSS
 
-        FilterState.SPOOFED, FilterState.RECOVERING -> {
+        FilterState.SPOOFED, FilterState.RECOVERING, FilterState.JAMMED -> {
             val net = lastNet
             // network fix accuracy is passed through honestly, never embellished (spec §3.4)
             if (net != null && netAgeMs(nowMs) < t.netFreshMs) net else lastGood
@@ -205,7 +236,7 @@ class FilterFsm(
     private fun modeFor(s: FilterState): MockMode = when (s) {
         FilterState.TRUSTED -> MockMode.OFF
         FilterState.RECOVERING -> MockMode.PARTIAL
-        FilterState.SPOOFED, FilterState.BLIND -> MockMode.FULL
+        FilterState.SPOOFED, FilterState.BLIND, FilterState.JAMMED -> MockMode.FULL
     }
 
     private fun netAgeMs(nowMs: Long): Long = lastNet?.let { nowMs - it.timeMs } ?: Long.MAX_VALUE
