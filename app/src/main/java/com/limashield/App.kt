@@ -14,7 +14,7 @@ class App : Application() {
         FieldRecorder.enabled =
             PreferenceManager.getDefaultSharedPreferences(this).getBoolean("field_recording", true)
 
-        // Краш в поле не должен пропасть: стектрейс уезжает в полевые файлы
+        // A crash in the field must not vanish: the stack trace goes into the field files
         val prev = Thread.getDefaultUncaughtExceptionHandler()
         Thread.setDefaultUncaughtExceptionHandler { t, e ->
             runCatching { FieldRecorder.crash(t, e) }

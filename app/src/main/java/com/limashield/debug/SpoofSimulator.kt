@@ -5,8 +5,8 @@ import kotlin.math.cos
 import kotlin.math.sin
 
 /**
- * Debug-инжект спуфинга (ТЗ §8, M3): подменяет входной GNSS-поток кругом над Лимой
- * со скоростью ~200 км/ч — полная сигнатура «Лимы» для проверки фильтра без РЭБ.
+ * Debug spoofing injection (spec §8, M3): replaces the GNSS input stream with a circle
+ * over Lima at ~200 km/h — the full "Lima" signature for testing the filter without EW.
  */
 class SpoofSimulator(private val startMs: Long) {
 

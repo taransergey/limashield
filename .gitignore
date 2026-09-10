@@ -10,5 +10,5 @@ captures/
 *.apk
 *.aab
 
-# Полевые записи содержат реальные координаты — не публикуем
+# Field recordings contain real coordinates — never published
 field-data/

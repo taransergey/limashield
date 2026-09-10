@@ -16,11 +16,11 @@ import com.limashield.core.MockMode
 import com.limashield.log.EventLog
 
 /**
- * Выход фильтра: тест-провайдеры gps/fused + mock-режим FLP (ТЗ §3.4).
+ * Filter output: gps/fused test providers + FLP mock mode (spec §3.4).
  *
- * network НЕ мокается сознательно (отклонение от ТЗ): сетевой провайдер спуфингу
- * не подвержен и является нашим единственным достоверным входом — его подмена
- * ослепила бы сам фильтр, а потребителям дала бы ровно те же координаты.
+ * The network provider is deliberately NOT mocked (deviation from the spec): it is
+ * not spoofable and is our only trusted input — overriding it would blind the filter
+ * itself while giving consumers the exact same coordinates.
  */
 class MockOutput(
     context: Context,
@@ -45,7 +45,7 @@ class MockOutput(
     var mockDenied: Boolean = false
         private set
 
-    /** gps действительно подменён (в FULL это и есть «защита активна»). */
+    /** gps is actually overridden (in FULL this is what "protection active" means). */
     val gpsEngaged: Boolean
         get() = LocationManager.GPS_PROVIDER in added
 
@@ -79,7 +79,7 @@ class MockOutput(
         EventLog.log(EventLog.Level.INFO, "Mock: $prev -> $newMode")
     }
 
-    /** Снять возможные остатки моков после аварийного завершения процесса. */
+    /** Remove possible mock leftovers after an abnormal process termination. */
     fun cleanupRemnants() {
         for (p in listOf(LocationManager.GPS_PROVIDER, fusedName())) {
             try {
@@ -90,8 +90,8 @@ class MockOutput(
     }
 
     /**
-     * Повторная попытка включить недостающие тест-провайдеры: mock-доступ могли
-     * выдать (или вернуть) уже после перехода в SPOOFED — щит не должен молчать.
+     * Retry engaging the missing test providers: mock access may have been granted
+     * (or restored) after we entered SPOOFED — the shield must not stay silent.
      */
     fun retryMissing() {
         when (mode) {
@@ -105,7 +105,7 @@ class MockOutput(
     }
 
     companion object {
-        /** Зачистка остаточных тест-провайдеров без экземпляра (после force-kill процесса). */
+        /** Instance-free cleanup of leftover test providers (after a force-killed process). */
         fun cleanupRemnants(ctx: Context) {
             val lm = ctx.getSystemService(LocationManager::class.java) ?: return
             val fused = if (Build.VERSION.SDK_INT >= 31) LocationManager.FUSED_PROVIDER else "fused"
@@ -144,7 +144,7 @@ class MockOutput(
             longitude = fix.lon
             accuracy = fix.accuracyM
             time = System.currentTimeMillis()
-            // Свежий elapsedRealtimeNanos обязателен — иначе система молча отбрасывает фикс (ТЗ §7.4)
+            // A fresh elapsedRealtimeNanos is mandatory — otherwise the system silently drops the fix (spec §7.4)
             elapsedRealtimeNanos = SystemClock.elapsedRealtimeNanos()
             fix.altitudeM?.let { altitude = it }
             fix.speedMps?.let { speed = it }
@@ -177,7 +177,7 @@ class MockOutput(
                 "No mock permission: set LimaShield as the mock location app in developer settings",
             )
         } catch (e: IllegalArgumentException) {
-            // На части прошивок (MIUI/ColorOS) отдельные провайдеры не мокаются — деградируем (ТЗ §7.4)
+            // Some ROMs (MIUI/ColorOS) refuse to mock certain providers — degrade gracefully (spec §7.4)
             EventLog.log(EventLog.Level.WARN, "Provider $name cannot be mocked on this ROM: ${e.message}")
         }
     }

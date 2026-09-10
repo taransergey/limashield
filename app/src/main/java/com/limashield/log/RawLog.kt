@@ -1,12 +1,12 @@
 package com.limashield.log
 
 /**
- * Кольцо сырых фиксов обоих провайдеров (CSV). Уходит в logcat (LimaShieldRaw)
- * и в шарящийся файл лога — полевые записи для разбора реальных срабатываний (M5).
+ * Ring of raw fixes from both providers (CSV). Goes to logcat (LimaShieldRaw)
+ * and into the shareable log file — field recordings for analyzing real events (M5).
  */
 object RawLog {
 
-    private const val CAPACITY = 1200 // ~15 минут GNSS @1 Гц + сеть
+    private const val CAPACITY = 1200 // ~15 minutes of GNSS @1 Hz + network
 
     private val buf = ArrayDeque<String>()
 

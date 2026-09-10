@@ -8,7 +8,7 @@ import android.os.Process
 import android.provider.Settings
 import com.limashield.R
 
-/** Статусы шагов онбординга: что уже настроено, что осталось. */
+/** Onboarding step statuses: what is already configured and what remains. */
 object SetupStatus {
 
     fun locationGranted(ctx: Context): Boolean = hasLocationPermission(ctx)
@@ -39,8 +39,8 @@ object SetupStatus {
     }
 
     /**
-     * Вендорные киллеры фона (реальный случай: ColorOS остановил фильтр через 4.5 мин).
-     * Стандартного exemption мало — нужны ещё вендорные тумблеры.
+     * Vendor background killers (real case: ColorOS stopped the filter after 4.5 min).
+     * The standard exemption is not enough — vendor-specific toggles are also needed.
      */
     fun batteryHintRes(): Int {
         val m = Build.MANUFACTURER.lowercase()
@@ -51,7 +51,7 @@ object SetupStatus {
         }
     }
 
-    /** Путь к «Номеру сборки» отличается по прошивкам — подсказка под вендора. */
+    /** The path to "Build number" differs across ROMs — vendor-specific hint. */
     fun buildNumberHintRes(): Int {
         val m = Build.MANUFACTURER.lowercase()
         return when {

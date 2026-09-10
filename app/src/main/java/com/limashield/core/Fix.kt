@@ -1,8 +1,8 @@
 package com.limashield.core
 
 /**
- * Чистая модель фикса без зависимостей от Android —
- * ядро (детектор + FSM) тестируется на JVM без эмулятора (ТЗ §3.3).
+ * Pure fix model with no Android dependencies — the core (detector + FSM)
+ * is unit-tested on the JVM without an emulator (spec §3.3).
  */
 data class Fix(
     val lat: Double,

@@ -52,14 +52,14 @@ import kotlinx.coroutines.launch
 import java.util.Locale
 
 /**
- * Foreground-сервис фильтра (ТЗ §3): слушает сырые gps/network через LocationManager
- * (НЕ через FLP — петля, ТЗ §7.1), гоняет фиксы через SpoofDetector+FSM и управляет
- * mock-выходом.
+ * The filter's foreground service (spec §3): listens to raw gps/network via
+ * LocationManager (NOT via FLP — feedback loop, spec §7.1), runs fixes through
+ * SpoofDetector+FSM and drives the mock output.
  *
- * Поскольку включённый мок gps перекрывает реальный GNSS и для нас самих,
- * в SPOOFED/BLIND сервис периодически делает «peek»: на несколько секунд снимает
- * мок с gps, чтобы проверить, не вернулся ли честный сигнал. Если прошивка
- * продолжает отдавать реальные фиксы при активном моке — peek отключается.
+ * Since an engaged gps mock hides the real GNSS from us as well, in SPOOFED/BLIND
+ * the service periodically "peeks": releases the gps mock for a few seconds to check
+ * whether an honest signal is back. If the ROM keeps delivering real fixes under an
+ * active mock, peeking disables itself.
  */
 class LocationFilterService : Service() {
 
@@ -114,7 +114,7 @@ class LocationFilterService : Service() {
                 if (status.usedInFix(i)) used++
                 cn0 += status.getCn0DbHz(i).toDouble()
             }
-            // средний C/N0 четырёх сильнейших — телеметрия для будущих эвристик (ТЗ M5)
+            // mean C/N0 of the four strongest satellites — telemetry for future heuristics (spec M5)
             lastCn0Mean = cn0.sortedDescending().take(4).let {
                 if (it.isEmpty()) 0.0 else it.sum() / it.size
             }
@@ -174,7 +174,7 @@ class LocationFilterService : Service() {
         mock.cleanupRemnants()
 
         try {
-            // Сырые провайдеры напрямую, интервалы по ТЗ §3.1
+            // Raw providers directly, intervals per spec §3.1
             lm.requestLocationUpdates(LocationManager.GPS_PROVIDER, 1000L, 0f, gpsListener, mainLooper)
         } catch (e: Exception) {
             EventLog.log(EventLog.Level.ERROR, "GPS subscription failed: ${e.message}")
@@ -212,13 +212,13 @@ class LocationFilterService : Service() {
     private fun onGnssLocation(l: Location) {
         val fix = l.toFix()
         logRaw(fix)
-        if (fix.isMock) return // эхо собственного мока (или чужой мокер) — в детектор не пускаем
+        if (fix.isMock) return // echo of our own mock (or a foreign mocker) — never feed the detector
         lastRealGnssMs = System.currentTimeMillis()
         ServiceBus.update { it.copy(lastGnss = fix, gnssSilentSec = null) }
-        if (simulator != null) return // при активной симуляции реальный GNSS игнорируется
+        if (simulator != null) return // real GNSS is ignored while the simulation is active
 
-        // Guard 3 с: фикс мог застрять в очереди доставки до включения мока —
-        // без него ложный passthroughCapable навсегда отключает peek
+        // 3 s guard: a fix may have been queued for delivery before the mock engaged —
+        // without it a false passthroughCapable permanently disables peeking
         if (mock.mode == MockMode.FULL && !peekActive && !passthroughCapable &&
             System.currentTimeMillis() - fullSinceMs > 3_000
         ) {
@@ -239,7 +239,7 @@ class LocationFilterService : Service() {
         applyResult(fsm.onNetwork(fix, System.currentTimeMillis()), fromGnss = false)
     }
 
-    /** Сырой поток обоих провайдеров: в logcat (LimaShieldRaw) и в шарящийся лог (M5). */
+    /** Raw stream of both providers: to logcat (LimaShieldRaw) and the shareable field log (M5). */
     private fun logRaw(fix: Fix) {
         val line = "%d,%s,%.6f,%.6f,%.1f,%s,%s,%d,%b".format(
             Locale.US,
@@ -255,7 +255,7 @@ class LocationFilterService : Service() {
     private fun handleTick() {
         val now = System.currentTimeMillis()
 
-        // Debug-инжект спуфинга (Настройки → Отладка)
+        // Debug spoofing injection (Settings → Debug)
         val simWanted = Prefs.simulateSpoof(sp)
         if (simWanted && simulator == null) {
             simulator = SpoofSimulator(now)
@@ -278,9 +278,9 @@ class LocationFilterService : Service() {
     }
 
     /**
-     * «Щит не должен молчать»: в FULL без реально подменённого gps защита не работает —
-     * телефон остаётся на поддельном GPS. Кричим и периодически пытаемся включиться
-     * (mock-доступ могли выдать позже).
+     * "The shield must not stay silent": FULL without an actually overridden gps means
+     * no protection — the phone stays on spoofed GPS. Shout and keep retrying
+     * (mock access may be granted later).
      */
     private fun checkMockHealth(now: Long) {
         val broken = mock.mode == MockMode.FULL && !mock.gpsEngaged
@@ -325,7 +325,7 @@ class LocationFilterService : Service() {
         runCatching { getSystemService(NotificationManager::class.java).notify(NOTIF_MOCK_ALERT, notif) }
     }
 
-    /** Периодическая телеметрия в полевую запись: спутники/C⁄N0 и батарея. */
+    /** Periodic telemetry into the field recording: satellites/C⁄N0 and battery. */
     private fun logTelemetry(now: Long) {
         if (!FieldRecorder.enabled) return
         if (now - lastSatsLogMs > 30_000) {
@@ -348,13 +348,14 @@ class LocationFilterService : Service() {
     }
 
     /**
-     * GNSS-фиксы пропали при видимых спутниках — похоже на глушение/подавление
-     * (наблюдалось в поле 2026-09-06: 32 видимых, 0 used, фиксов нет).
-     * Состояние не меняем (без фиксов приложениям нечего «уносить»), только индикация.
+     * GNSS fixes vanished while satellites are visible — looks like jamming/suppression
+     * (observed in the field 2026-09-06: 32 visible, 0 used, no fixes).
+     * State is not changed (with no fixes there is nothing to drag apps away with) —
+     * indication only.
      */
     private fun checkGnssSilence(now: Long) {
         if (simulator != null) return
-        // при активном моке gps реальный GNSS штатно molчит — не путать с глушением
+        // with the gps mock engaged real GNSS is silent by design — don't confuse it with jamming
         if (mock.mode == MockMode.FULL && !peekActive) return
         val silentMs = now - lastRealGnssMs
         val sats = ServiceBus.ui.value.satsTotal
@@ -381,11 +382,11 @@ class LocationFilterService : Service() {
         var desired = r.mockMode
         if (peekActive) {
             when {
-                desired != MockMode.FULL -> peekActive = false // пробация или отключение — окно закрылось само
-                fromGnss -> { // GNSS пришёл, но всё ещё спуфится — закрываем окно
+                desired != MockMode.FULL -> peekActive = false // probation or shutdown — the window closed itself
+                fromGnss -> { // GNSS arrived but is still spoofed — close the window
                     peekActive = false
                 }
-                else -> desired = MockMode.PARTIAL // тик внутри окна — ждём GNSS
+                else -> desired = MockMode.PARTIAL // tick inside the window — keep waiting for GNSS
             }
         }
 
@@ -487,8 +488,8 @@ class LocationFilterService : Service() {
         FilterTileService.requestUpdate(this)
         EventLog.log(EventLog.Level.INFO, "Service stopped, mocks removed")
 
-        // Пользователь фильтр не выключал — значит, сервис остановила система
-        // (ColorOS-киллер: реальный случай 2026-09-10, смерть через 4.5 мин без battery exemption).
+        // The user did not switch the filter off — so the system stopped the service
+        // (ColorOS killer: real case on 2026-09-10, killed after 4.5 min without a battery exemption).
         val wanted = started && PreferenceManager.getDefaultSharedPreferences(this)
             .getBoolean("filter_enabled", false)
         if (wanted) {
@@ -535,7 +536,7 @@ class LocationFilterService : Service() {
             private set
 
         fun start(ctx: Context) {
-            // флаг для восстановления после перезагрузки телефона (BootReceiver)
+            // flag for restoring after a phone reboot (BootReceiver)
             PreferenceManager.getDefaultSharedPreferences(ctx)
                 .edit().putBoolean("filter_enabled", true).apply()
             ContextCompat.startForegroundService(ctx, Intent(ctx, LocationFilterService::class.java))

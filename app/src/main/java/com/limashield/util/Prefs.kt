@@ -3,7 +3,7 @@ package com.limashield.util
 import android.content.SharedPreferences
 import com.limashield.core.Thresholds
 
-/** Ключи настроек и сборка Thresholds из SharedPreferences (ТЗ §6). */
+/** Settings keys and Thresholds assembly from SharedPreferences (spec §6). */
 object Prefs {
 
     val THRESHOLD_KEYS = setOf(

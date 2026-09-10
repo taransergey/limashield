@@ -12,9 +12,9 @@ import com.limashield.R
 import com.limashield.ui.MainActivity
 
 /**
- * После перезагрузки телефона Android не разрешает молча поднять location-FGS
- * без background-разрешения, поэтому предлагаем запуск нотификацией:
- * тап по действию — это user interaction, старт сервиса разрешён.
+ * After a phone reboot Android does not allow silently starting a location FGS
+ * without background location permission, so we offer the start via a notification:
+ * tapping the action is a user interaction, which makes the service start legal.
  */
 class BootReceiver : BroadcastReceiver() {
 

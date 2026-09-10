@@ -22,7 +22,7 @@ object GeoMath {
 
     fun haversineM(a: Fix, b: Fix): Double = haversineM(a.lat, a.lon, b.lat, b.lon)
 
-    /** Азимут точка→точка, градусы 0..360. */
+    /** Point-to-point bearing, degrees 0..360. */
     fun bearingDeg(a: Fix, b: Fix): Double {
         val f1 = Math.toRadians(a.lat)
         val f2 = Math.toRadians(b.lat)
@@ -32,7 +32,7 @@ object GeoMath {
         return (Math.toDegrees(atan2(y, x)) + 360.0) % 360.0
     }
 
-    /** Кратчайшая разница углов, диапазон −180..180. */
+    /** Shortest angular difference, range −180..180. */
     fun angleDiffDeg(from: Double, to: Double): Double {
         var d = (to - from) % 360.0
         if (d > 180.0) d -= 360.0

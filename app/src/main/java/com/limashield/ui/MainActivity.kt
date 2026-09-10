@@ -89,7 +89,7 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
-        // Первый запуск без mock-доступа — сразу ведём в мастер настройки
+        // First launch without mock access — take the user straight to the setup wizard
         val sp = PreferenceManager.getDefaultSharedPreferences(this)
         if (!sp.getBoolean("onboarding_shown", false) && !SetupStatus.mockAllowed(this)) {
             sp.edit().putBoolean("onboarding_shown", true).apply()
@@ -104,8 +104,8 @@ class MainActivity : AppCompatActivity() {
     override fun onResume() {
         super.onResume()
         b.warnMock.isVisible = !SetupStatus.mockAllowed(this)
-        // После force-kill процесса тест-провайдер мог остаться висеть в системе
-        // с замороженной точкой — зачищаем при каждом открытии, если сервис не работает
+        // After a force-killed process a test provider can stay hanging in the system
+        // with a frozen point — clean up on every open while the service is not running
         if (!LocationFilterService.isRunning) {
             MockOutput.cleanupRemnants(this)
         }
@@ -134,14 +134,14 @@ class MainActivity : AppCompatActivity() {
     private fun startFilter() {
         LocationFilterService.start(this)
         if (!SetupStatus.mockAllowed(this)) {
-            // без mock-доступа фильтр только детектирует — ведём в мастер
+            // without mock access the filter can only detect — lead to the wizard
             openOnboarding()
         } else {
             maybeAskBatteryExemption()
         }
     }
 
-    // ---- полевые маркеры и заметки ----
+    // ---- field markers and notes ----
 
     private fun mark(marker: FieldMarker) {
         logFieldMarker(marker)
@@ -174,14 +174,15 @@ class MainActivity : AppCompatActivity() {
             .show()
     }
 
-    // ---- шаринг лога: zip полевых файлов дня через FileProvider → Telegram/почта ----
+    // ---- log sharing: zip of the day's field files via FileProvider → Telegram/email ----
 
     private fun shareLog() {
-        // подготовка архива — файловая работа, уводим с main thread
+        // archive preparation is file work — keep it off the main thread
         lifecycleScope.launch {
             val (file, mime) = withContext(Dispatchers.IO) {
                 val dir = File(cacheDir, "logs").apply { mkdirs() }
                 val stamp = SimpleDateFormat("yyyyMMdd-HHmmss", Locale.US).format(Date())
+                // fresh ring snapshot goes into the archive as its own file
                 val current = File(dir, "current-session.txt").apply { writeText(buildLogDump()) }
                 val zip = File(dir, "limashield-$stamp.zip")
                 val zipped = FieldRecorder.zipTo(zip, listOf(current))
@@ -264,7 +265,7 @@ class MainActivity : AppCompatActivity() {
             title = getString(R.string.state_off_title)
             detail = getString(R.string.state_off_detail)
         } else if (!ui.mockPermissionOk) {
-            // Мок должен работать, но не работает: телефон фактически на поддельном GPS
+            // The mock should be engaged but is not: the phone is effectively on spoofed GPS
             color = Color.parseColor("#B71C1C")
             title = getString(R.string.alert_mock_title)
             detail = getString(R.string.alert_mock_text)
@@ -321,7 +322,7 @@ class MainActivity : AppCompatActivity() {
 
         b.warnSim.isVisible = ui.simulating
 
-        // маркеры со снапшотом состояния имеют смысл только при работающем фильтре
+        // markers with a state snapshot only make sense while the filter is running
         b.btnMarkJumped.isEnabled = ui.running
         b.btnMarkFalse.isEnabled = ui.running
         b.btnMarkNoPos.isEnabled = ui.running

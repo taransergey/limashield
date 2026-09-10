@@ -6,7 +6,7 @@ import com.limashield.core.MockMode
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.update
 
-/** Состояние сервиса для UI/тайла (ТЗ §3: StateFlow). Сервис пишет, UI читает. */
+/** Service state for the UI/tile (spec §3: StateFlow). The service writes, the UI reads. */
 object ServiceBus {
 
     data class Ui(
@@ -23,7 +23,7 @@ object ServiceBus {
         val simulating: Boolean = false,
         val passthrough: Boolean = false,
         val lastVerdict: String? = null,
-        /** Секунды без GNSS-фиксов при видимых спутниках (подозрение на глушение), null — всё в порядке. */
+        /** Seconds without GNSS fixes while satellites are visible (suspected jamming); null — all good. */
         val gnssSilentSec: Long? = null,
     )
 

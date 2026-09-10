@@ -2,8 +2,8 @@ package com.limashield.core
 
 import kotlin.math.abs
 
-// Лог и вердикты — технический английский: файл лога шарится для отладки,
-// единый язык упрощает разбор. UI локализован отдельно (values-*).
+// Log and verdicts are technical English: log files get shared for debugging,
+// a single language keeps them easy to analyze. UI is localized separately (values-*).
 enum class SpoofCause(val label: String) {
     NET_DIVERGENCE("C1: GNSS/network divergence"),
     TELEPORT("C2: teleport"),
@@ -26,10 +26,11 @@ data class SpoofVerdict(val causes: Set<SpoofCause>) {
 }
 
 /**
- * Детектор спуфинга (ТЗ §4). Чистая JVM-логика, без Android в сигнатуре.
- * Критерии К2–К5 работают без сетевого фикса — детекция не зависит от связи.
+ * Spoofing detector (spec §4). Pure JVM logic, no Android in the signature.
+ * Criteria C2–C5, C7, C8 work without a network fix — detection never depends
+ * on connectivity.
  *
- * @param history последние сырые GNSS-фиксы, текущий — последним элементом.
+ * @param history recent raw GNSS fixes, the current one last.
  */
 class SpoofDetector(private val t: Thresholds) {
 
@@ -42,14 +43,14 @@ class SpoofDetector(private val t: Thresholds) {
     ): SpoofVerdict {
         val causes = mutableSetOf<SpoofCause>()
 
-        // К1: GNSS против свежего сетевого фикса — основной критерий
+        // C1: GNSS vs a fresh network fix — the primary criterion
         if (network != null && nowMs - network.timeMs < t.netFreshMs &&
             GeoMath.haversineM(gnss, network) > t.netDivergenceM
         ) {
             causes += SpoofCause.NET_DIVERGENCE
         }
 
-        // К2: телепортация от последней доверенной позиции
+        // C2: teleport away from the last trusted position
         if (lastGood != null) {
             val dt = gnss.timeMs - lastGood.timeMs
             if (dt in 1..t.teleportDtMs && GeoMath.haversineM(gnss, lastGood) > t.teleportM) {
@@ -57,7 +58,7 @@ class SpoofDetector(private val t: Thresholds) {
             }
         }
 
-        // К3: скорость выше физического порога на N фиксах подряд
+        // C3: speed above the physical threshold on N consecutive fixes
         if (history.size >= t.speedConsecutive) {
             val tail = history.takeLast(t.speedConsecutive)
             if (tail.all { (it.speedMps ?: 0f) > t.maxSpeedMps }) {
@@ -65,18 +66,18 @@ class SpoofDetector(private val t: Thresholds) {
             }
         }
 
-        // К4: фикс внутри зоны сигнатуры при доверенной позиции вне её
+        // C4: fix inside the signature zone while the trusted position is outside it
         if (t.signatureZone.contains(gnss) && lastGood != null && !t.signatureZone.contains(lastGood)) {
             causes += SpoofCause.SIGNATURE_ZONE
         }
 
-        // К5: круговое движение — сигнатура «Лимы» (круг ~200 км/ч)
+        // C5: circular motion — the "Lima" signature (a circle at ~200 km/h)
         if (detectCircle(history)) {
             causes += SpoofCause.CIRCULAR_MOTION
         }
 
-        // К6: «утаскивание» — GNSS дальше от свежей сети, чем оправдано её точностью
-        // и возможным перемещением за возраст сетевого фикса
+        // C6: drag-off — GNSS is farther from a fresh network fix than its accuracy
+        // and plausible movement over the fix age can justify
         if (network != null) {
             val ageS = (nowMs - network.timeMs) / 1000.0
             if (ageS in 0.0..(t.netFreshMs / 1000.0)) {
@@ -86,12 +87,12 @@ class SpoofDetector(private val t: Thresholds) {
             }
         }
 
-        // К7: скорость, идентичная бит-в-бит N фиксов подряд — синтетический трек
+        // C7: speed identical bit-for-bit on N consecutive fixes — a synthetic track
         if (detectFrozenSpeed(history)) {
             causes += SpoofCause.FROZEN_TRACK
         }
 
-        // К8: GPS-время фикса разъехалось с системным — гарантированная синтетика
+        // C8: GPS fix time diverged from system time — guaranteed synthetic signal
         if (abs(gnss.timeMs - nowMs) > t.timeWarpMs) {
             causes += SpoofCause.TIME_WARP
         }
@@ -108,8 +109,8 @@ class SpoofDetector(private val t: Thresholds) {
     }
 
     /**
-     * Круг: почти постоянная линейная скорость (CV < 5%) + монотонный поворот bearing
-     * с постоянной угловой скоростью и накопленным поворотом ≥ порога.
+     * Circle: near-constant linear speed (CV < 5%) + monotonic bearing turn with a
+     * steady angular rate and an accumulated turn above the threshold.
      */
     internal fun detectCircle(history: List<Fix>): Boolean {
         if (history.size < t.circleMinFixes) return false
@@ -121,7 +122,7 @@ class SpoofDetector(private val t: Thresholds) {
             val a = fixes[i - 1]
             val b = fixes[i]
             val dtS = (b.timeMs - a.timeMs) / 1000.0
-            if (dtS <= 0.0 || dtS > 5.0) return false // рваный поток — не оцениваем
+            if (dtS <= 0.0 || dtS > 5.0) return false // ragged stream — skip evaluation
             val dist = GeoMath.haversineM(a, b)
             speeds += b.speedMps?.toDouble() ?: (dist / dtS)
             if (dist > 3.0) bearings += b.bearingDeg?.toDouble() ?: GeoMath.bearingDeg(a, b)

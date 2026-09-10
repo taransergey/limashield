@@ -4,8 +4,8 @@ import kotlin.math.cos
 import kotlin.math.sin
 
 /**
- * Генератор синтетических потоков фиксов для тестов (ТЗ §8):
- * прямолинейная езда, телепорт, круг «Лимы».
+ * Generator of synthetic fix streams for tests (spec §8):
+ * straight-line driving, teleport, the "Lima" circle.
  */
 object Scenario {
     const val KYIV_LAT = 50.4501
@@ -13,20 +13,20 @@ object Scenario {
     const val LIMA_LAT = -12.0464
     const val LIMA_LON = -77.0428
 
-    /** Смещение точки на distM метров по азимуту bearingDeg. */
+    /** Offset a point by distM meters along bearingDeg. */
     fun move(lat: Double, lon: Double, bearingDeg: Double, distM: Double): Pair<Double, Double> {
         val dN = distM * cos(Math.toRadians(bearingDeg))
         val dE = distM * sin(Math.toRadians(bearingDeg))
         return (lat + dN / 111_320.0) to (lon + dE / (111_320.0 * cos(Math.toRadians(lat))))
     }
 
-    /** Точка на окружности радиуса radiusM вокруг центра, угол angleRad. */
+    /** Point on a circle of radius radiusM around the center at angleRad. */
     fun circlePoint(cLat: Double, cLon: Double, radiusM: Double, angleRad: Double): Pair<Double, Double> =
         (cLat + radiusM * cos(angleRad) / 111_320.0) to
             (cLon + radiusM * sin(angleRad) / (111_320.0 * cos(Math.toRadians(cLat))))
 }
 
-/** Драйвер FSM с синтетическими часами: секунда за секундой, как в сервисе. */
+/** FSM driver with a synthetic clock: second by second, like in the service. */
 class Sim(t: Thresholds = Thresholds()) {
     val fsm = FilterFsm(t)
     var now: Long = 1_700_000_000_000L

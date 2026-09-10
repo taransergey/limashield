@@ -20,7 +20,7 @@ class SpoofDetectorTest {
         val net = Fix(Scenario.KYIV_LAT, Scenario.KYIV_LON, 60f, now - 5_000, provider = "network")
         val v = d.evaluate(gnss, net, null, listOf(gnss), now)
         assertTrue(SpoofCause.NET_DIVERGENCE in v.causes)
-        assertTrue(SpoofCause.DRAG_OFF in v.causes) // К6 на таком расхождении тоже обязан сработать
+        assertTrue(SpoofCause.DRAG_OFF in v.causes) // C6 must also fire on a divergence this large
     }
 
     @Test
@@ -70,7 +70,7 @@ class SpoofDetectorTest {
 
     @Test
     fun `К3 не трогает мотоциклиста на 170 кмч`() {
-        val v = 47.2f // 170 км/ч
+        val v = 47.2f // 170 km/h
         val h = (0..2).map { fix(50.0 + it * 0.001, 30.0, now - (2 - it) * 1000L, speed = v) }
         assertFalse(d.evaluate(h.last(), null, null, h, now).isSpoofed)
     }
@@ -83,10 +83,10 @@ class SpoofDetectorTest {
         assertFalse(SpoofCause.SIGNATURE_ZONE in v.causes)
     }
 
-    // ---- К5: круговое движение ----
+    // ---- C5: circular motion ----
 
     private fun circleFixes(speedMps: Double, radiusM: Double, seconds: Int): List<Fix> {
-        val omega = speedMps / radiusM // рад/с
+        val omega = speedMps / radiusM // rad/s
         return (0 until seconds).map { s ->
             val a = omega * s
             val (lat, lon) = Scenario.circlePoint(50.3, 30.4, radiusM, a)
@@ -117,16 +117,16 @@ class SpoofDetectorTest {
 
     @Test
     fun `К5 молчит на медленном круговом перекрёстке`() {
-        val h = circleFixes(8.0, 25.0, 20) // 29 км/ч по кольцу
+        val h = circleFixes(8.0, 25.0, 20) // 29 km/h around a roundabout
         assertFalse(d.detectCircle(h))
     }
 
-    // ---- К6/К7: сигнатуры реального drag-off (полевая запись 2026-09-06) ----
+    // ---- C6/C7: signatures of the real drag-off (field recording 2026-09-06) ----
 
     @Test
     fun `К6 ловит утаскивание за адаптивный порог при свежей сети`() {
         val net = Fix(48.5457, 34.8662, 100f, now - 5_000, provider = "network")
-        // GNSS «уехал» на ~1.2 км при сети ±100 м: порог = max(600, 400) + 5*42 = 810 м
+        // GNSS "drifted" ~1.2 km with network ±100 m: threshold = max(600, 400) + 5*42 = 810 m
         val (lat, lon) = Scenario.move(48.5457, 34.8662, 307.0, 1_200.0)
         val gnss = fix(lat, lon)
         val v = d.evaluate(gnss, net, null, listOf(gnss), now)
@@ -135,7 +135,7 @@ class SpoofDetectorTest {
 
     @Test
     fun `К6 не ложнит при быстрой езде со старым сетевым фиксом`() {
-        // сеть 50 с назад, я уехал 2 км на мотоцикле: порог = 600 + 50*42 = 2700 м
+        // network fix is 50 s old, I rode 2 km away: threshold = 600 + 50*42 = 2700 m
         val net = Fix(48.5457, 34.8662, 100f, now - 50_000, provider = "network")
         val (lat, lon) = Scenario.move(48.5457, 34.8662, 0.0, 2_000.0)
         val gnss = fix(lat, lon, speed = 40f)
@@ -145,7 +145,7 @@ class SpoofDetectorTest {
 
     @Test
     fun `К7 ловит скорость замороженную бит-в-бит`() {
-        // как в реальной записи: 25.005072 м/с несколько фиксов подряд
+        // as in the real recording: 25.005072 m/s for several consecutive fixes
         val s = 25.005072f
         val h = (0..3).map { i ->
             val (lat, lon) = Scenario.move(48.55, 34.85, 307.0, 25.0 * i)
@@ -163,7 +163,7 @@ class SpoofDetectorTest {
 
     @Test
     fun `К8 ловит сдвинутое GPS-время`() {
-        // как в реальной записи: время фикса на ~550 суток впереди системного
+        // as in the real recording: fix time ~550 days ahead of system time
         val gnss = Fix(48.55, 34.85, 1f, now + 47_600_000_000L)
         val v = d.evaluate(gnss, null, null, listOf(gnss), now)
         assertTrue(SpoofCause.TIME_WARP in v.causes)

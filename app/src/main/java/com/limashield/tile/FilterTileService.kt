@@ -20,7 +20,7 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 
-/** Quick Settings tile: вкл/выкл сервиса + короткий статус (ТЗ §5). */
+/** Quick Settings tile: service on/off + short status (spec §5). */
 class FilterTileService : TileService() {
 
     private var scope: CoroutineScope? = null

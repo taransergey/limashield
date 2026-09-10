@@ -4,16 +4,17 @@ import com.limashield.bus.ServiceBus
 import java.util.Locale
 
 /**
- * Быстрые полевые маркеры: один тап — метка в логе со снапшотом состояния фильтра.
- * Снапшот критичен для разбора: без него «что-то не так в 14:32» бесполезно.
+ * One-tap field markers: a single tap drops a log entry with a snapshot of the
+ * filter state. The snapshot is what makes it useful — a bare "something was off
+ * at 14:32" is worthless for analysis.
  */
 enum class FieldMarker(val tag: String) {
-    MAP_JUMPED("MAP_JUMPED"),     // карта улетела — фильтр пропустил спуф
-    FALSE_ALARM("FALSE_ALARM"),   // фильтр в SPOOFED, а GNSS на самом деле честный
-    NO_POSITION("NO_POSITION"),   // приложения без позиции
-    PROBLEM("PROBLEM"),           // обобщённая проблема (кнопка в нотификации)
-    ALL_OK("ALL_OK"),             // контрольная отметка «едет нормально»
-    NOTE("NOTE"),                 // произвольная заметка
+    MAP_JUMPED("MAP_JUMPED"),     // the map flew away — the filter missed a spoof
+    FALSE_ALARM("FALSE_ALARM"),   // filter says SPOOFED while GNSS is actually honest
+    NO_POSITION("NO_POSITION"),   // apps have no position
+    PROBLEM("PROBLEM"),           // generic problem (notification action)
+    ALL_OK("ALL_OK"),             // checkpoint "riding fine"
+    NOTE("NOTE"),                 // free-form note
 }
 
 fun logFieldMarker(marker: FieldMarker, note: String? = null) {

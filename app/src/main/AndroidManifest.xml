@@ -9,8 +9,8 @@
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
-    <!-- Обязателен, чтобы приложение появилось в списке
-         «Приложение для фиктивных местоположений» в настройках разработчика (ТЗ §3.4) -->
+    <!-- Mandatory for the app to appear in the "Select mock location app"
+         picker in developer options (spec §3.4) -->
     <uses-permission
         android:name="android.permission.ACCESS_MOCK_LOCATION"
         tools:ignore="MockLocation,ProtectedPermissions" />

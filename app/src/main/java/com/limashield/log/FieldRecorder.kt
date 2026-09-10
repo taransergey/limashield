@@ -15,12 +15,12 @@ import java.util.zip.ZipEntry
 import java.util.zip.ZipOutputStream
 
 /**
- * Полевая запись на диск (M5): события и сырой поток фиксов пишутся в files/field/
- * посуточными файлами, переживают перезапуски процесса и выгружаются zip-архивом.
- * Кольца EventLog/RawLog в памяти — оперативный срез; здесь — полная история дня.
+ * On-disk field recording (M5): events and the raw fix stream are written to
+ * files/field/ as daily files, survive process restarts and are exported as a zip.
+ * The in-memory EventLog/RawLog rings are the live snapshot; this is the full day.
  *
- * Вся файловая работа — на выделенном фоновом потоке (вызовы приходят с main).
- * Исключение — crash(): пишется синхронно, чтобы успеть до смерти процесса.
+ * All file work happens on a dedicated background thread (calls arrive from main).
+ * The exception is crash(): written synchronously to make it before the process dies.
  */
 object FieldRecorder {
 
@@ -64,7 +64,7 @@ object FieldRecorder {
         io.execute { synchronized(this) { runCatching { rawWriter?.flush() } } }
     }
 
-    /** Крашрепорт — синхронно и всегда, независимо от enabled. */
+    /** Crash report — synchronous and unconditional, regardless of enabled. */
     @Synchronized
     fun crash(thread: Thread, e: Throwable) {
         val d = dir ?: return
@@ -78,9 +78,9 @@ object FieldRecorder {
         dir?.listFiles()?.filter { it.isFile && it.length() > 0 }?.sortedBy { it.name } ?: emptyList()
 
     /**
-     * Собрать все полевые файлы (+extra) в zip. Выполняется в очереди записи
-     * (сериализовано с write-операциями); блокирует вызывающий — звать с Dispatchers.IO.
-     * Возвращает false, если писать нечего.
+     * Pack all field files (+extra) into a zip. Runs in the write queue
+     * (serialized with write operations); blocks the caller — invoke from Dispatchers.IO.
+     * Returns false when there is nothing to pack.
      */
     fun zipTo(target: File, extra: List<File> = emptyList()): Boolean = try {
         io.submit(Callable { doZip(target, extra) }).get(15, TimeUnit.SECONDS)
@@ -88,7 +88,7 @@ object FieldRecorder {
         false
     }
 
-    // ---- внутренности, только на потоке io (кроме crash) ----
+    // ---- internals, io thread only (except crash) ----
 
     @Synchronized
     private fun writeEvent(ts: String, level: String, msg: String) {

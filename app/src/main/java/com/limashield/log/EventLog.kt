@@ -7,7 +7,7 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
-/** Кольцевой журнал событий (ТЗ §3): переходы состояний, критерии, ошибки. */
+/** Ring buffer of events (spec §3): state transitions, criteria, errors. */
 object EventLog {
 
     enum class Level { INFO, STATE, WARN, ERROR }
@@ -23,7 +23,7 @@ object EventLog {
 
     @Synchronized
     fun log(level: Level, msg: String) {
-        // Схлопываем секундный спам одинаковых событий (например, «спуфинг продолжается»)
+        // Collapse per-second spam of identical events (e.g. "spoofing continues")
         val last = buf.lastOrNull()
         if (last != null && last.msg == msg && System.currentTimeMillis() - last.ts < 10_000) return
         buf.addLast(Entry(System.currentTimeMillis(), level, msg))

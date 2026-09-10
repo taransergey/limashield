@@ -3,21 +3,21 @@ package com.limashield.core
 enum class FilterState { TRUSTED, SPOOFED, RECOVERING, BLIND }
 
 /**
- * Желаемый режим mock-выхода.
+ * Desired mock output mode.
  *
- * Важно (уточнение к ТЗ §3.4): включённый тест-провайдер gps ПОЛНОСТЬЮ подменяет
- * реальный GPS в системе — в том числе для нас самих. Поэтому непрерывный
- * passthrough через мок невозможен: в TRUSTED мок выключен (приложения читают
- * реальные провайдеры напрямую), мок включается только когда GNSS недостоверен.
+ * Important (amendment to spec §3.4): an enabled gps test provider FULLY replaces
+ * the real GPS in the system — including for ourselves. Continuous passthrough
+ * through the mock is therefore impossible: in TRUSTED the mock is off (apps read
+ * the real providers directly) and it engages only when GNSS is untrustworthy.
  */
 enum class MockMode {
-    /** TRUSTED: система живёт на реальных провайдерах, мока нет. */
+    /** TRUSTED: the system lives on real providers, no mock. */
     OFF,
 
-    /** RECOVERING / peek: gps свободен (слушаем реальный GNSS), fused ещё подменён сетью. */
+    /** RECOVERING / peek: gps is free (we listen to real GNSS), fused still fed by network. */
     PARTIAL,
 
-    /** SPOOFED / BLIND: gps и fused подменены отфильтрованной позицией. */
+    /** SPOOFED / BLIND: gps and fused are overridden with the filtered position. */
     FULL,
 }
 
@@ -30,13 +30,13 @@ data class FsmResult(
 )
 
 /**
- * Конечный автомат фильтра (ТЗ §3.2). Чистая JVM-логика: время приходит параметром,
- * покрывается unit-тестами на синтетических потоках фиксов.
+ * The filter state machine (spec §3.2). Pure JVM logic: time comes in as a parameter,
+ * covered by unit tests on synthetic fix streams.
  *
- * TRUSTED    — GNSS согласован и правдоподобен, мок выключен.
- * SPOOFED    — детектор сработал (подтверждено ≥2 фиксами), наружу идут сетевые фиксы.
- * RECOVERING — GNSS снова выглядит достоверным, идёт пробация (гистерезис 45 с).
- * BLIND      — спуфинг активен и сети нет >30 с: замороженная позиция, accuracy растёт.
+ * TRUSTED    — GNSS agrees with network and looks plausible; mock is off.
+ * SPOOFED    — the detector fired (confirmed by ≥2 fixes); network fixes go out.
+ * RECOVERING — GNSS looks trustworthy again; probation is running (45 s hysteresis).
+ * BLIND      — spoofing active and no network for >30 s: frozen position, accuracy grows.
  */
 class FilterFsm(
     private val t: Thresholds,
@@ -48,7 +48,7 @@ class FilterFsm(
 
     private val history = ArrayDeque<Fix>()
     private var lastNet: Fix? = null
-    private var lastGood: Fix? = null   // последняя позиция, которой верим (GNSS в TRUSTED, сеть в SPOOFED)
+    private var lastGood: Fix? = null   // last position we trust (GNSS in TRUSTED, network in SPOOFED)
     private var spoofStreak = 0
     private var recoveringSinceMs = 0L
     private var lastGnssMs = 0L
@@ -56,7 +56,7 @@ class FilterFsm(
     private var frozenAtMs = 0L
 
     fun onGnss(fix: Fix, nowMs: Long): FsmResult {
-        if (fix.isMock) return FsmResult(state, null, modeFor(state)) // эхо собственного мока
+        if (fix.isMock) return FsmResult(state, null, modeFor(state)) // echo of our own mock
         if (lastGnssMs != 0L && fix.timeMs - lastGnssMs > 30_000) history.clear()
         history.addLast(fix)
         while (history.size > t.circleMaxFixes + 5) history.removeFirst()
@@ -69,7 +69,7 @@ class FilterFsm(
             FilterState.TRUSTED -> {
                 if (verdict.isSpoofed) {
                     spoofStreak++
-                    // К8 не требует подтверждения: сдвиг GPS-времени не бывает выбросом
+                    // C8 needs no confirmation: a GPS time warp is never a one-off glitch
                     val instant = SpoofCause.TIME_WARP in verdict.causes
                     if (instant || spoofStreak >= t.spoofConfirmFixes) {
                         moveTo(
@@ -172,22 +172,22 @@ class FilterFsm(
         return FsmResult(state, emitFor(nowMs), modeFor(state), ev)
     }
 
-    /** Сходимость GNSS с опорой: свежая сеть (recoveryConvergeM) либо заморозка/lastGood (blindRecoverM). */
+    /** GNSS convergence with a reference: fresh network (recoveryConvergeM) or frozen/lastGood (blindRecoverM). */
     private fun converged(fix: Fix, nowMs: Long): Boolean {
         val net = lastNet
         if (net != null && nowMs - net.timeMs < t.netFreshMs) {
             return GeoMath.haversineM(fix, net) <= t.recoveryConvergeM
         }
-        val ref = frozen ?: lastGood ?: return true // сравнивать не с чем — верим критериям
+        val ref = frozen ?: lastGood ?: return true // nothing to compare with — trust the criteria
         return GeoMath.haversineM(fix, ref) <= t.blindRecoverM
     }
 
     private fun emitFor(nowMs: Long): Fix? = when (state) {
-        FilterState.TRUSTED -> null // мок выключен, система на реальном GNSS
+        FilterState.TRUSTED -> null // mock is off, the system runs on real GNSS
 
         FilterState.SPOOFED, FilterState.RECOVERING -> {
             val net = lastNet
-            // accuracy сетевого фикса отдаётся честно, без приукрашивания (ТЗ §3.4)
+            // network fix accuracy is passed through honestly, never embellished (spec §3.4)
             if (net != null && netAgeMs(nowMs) < t.netFreshMs) net else lastGood
         }
 

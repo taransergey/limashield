@@ -34,8 +34,8 @@ android {
     }
 
     lint {
-        // ACCESS_MOCK_LOCATION в манифесте обязателен: без него система не покажет
-        // приложение в списке «Приложение для фиктивных местоположений».
+        // ACCESS_MOCK_LOCATION in the manifest is mandatory: without it the system
+        // does not list the app in the "Select mock location app" picker.
         disable += listOf("MockLocation", "ProtectedPermissions")
         abortOnError = false
     }
@@ -55,7 +55,7 @@ dependencies {
     implementation("androidx.preference:preference-ktx:1.2.1")
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.8.7")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.10.2")
-    // Только для мока fused-провайдера (ТЗ §2); как ВХОД не используется — петля (ТЗ §7.1)
+    // Only for mocking the fused provider (spec §2); never used as INPUT — feedback loop (spec §7.1)
     implementation("com.google.android.gms:play-services-location:21.3.0")
 
     testImplementation("junit:junit:4.13.2")

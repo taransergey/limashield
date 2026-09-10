@@ -20,9 +20,9 @@ import com.limashield.service.LocationFilterService
 import com.limashield.util.SetupStatus
 
 /**
- * Мастер настройки для нетехнических пользователей: живые галочки по шагам,
- * кнопки ведут прямо в нужные экраны настроек, подсказки — под конкретную прошивку.
- * Ключевой шаг (выбор mock-приложения) Android не позволяет автоматизировать.
+ * Setup wizard for non-technical users: live per-step checkmarks, buttons deep-link
+ * into the right settings screens, hints tailored to the ROM. The key step (selecting
+ * the mock location app) cannot be automated on Android by design.
  */
 class OnboardingActivity : AppCompatActivity() {
 
