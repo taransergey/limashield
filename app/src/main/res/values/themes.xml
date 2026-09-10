@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Theme.LimaShield" parent="Theme.Material3.DayNight.NoActionBar">
+        <item name="colorPrimary">@color/state_trusted</item>
+    </style>
+
+    <style name="Theme.LimaShield.Settings" parent="Theme.Material3.DayNight">
+        <item name="colorPrimary">@color/state_trusted</item>
+        <item name="preferenceTheme">@style/PreferenceThemeOverlay</item>
+    </style>
+
+    <style name="ShapeAppearance.LimaShield.Logo" parent="">
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSize">24%</item>
+    </style>
+
+    <!-- Карточки мастера настройки -->
+    <style name="OnbCard">
+        <item name="android:layout_marginBottom">10dp</item>
+        <item name="cardCornerRadius">14dp</item>
+        <item name="cardElevation">1dp</item>
+    </style>
+
+    <style name="OnbCardInner">
+        <item name="android:orientation">vertical</item>
+        <item name="android:padding">14dp</item>
+    </style>
+
+    <style name="OnbCardHeader">
+        <item name="android:orientation">horizontal</item>
+        <item name="android:gravity">center_vertical</item>
+    </style>
+
+    <style name="OnbStatus">
+        <item name="android:textSize">18sp</item>
+    </style>
+
+    <style name="OnbTitle">
+        <item name="android:textSize">15sp</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:layout_marginStart">10dp</item>
+    </style>
+
+    <style name="OnbDesc">
+        <item name="android:textSize">13sp</item>
+        <item name="android:alpha">0.8</item>
+        <item name="android:layout_marginTop">6dp</item>
+    </style>
+
+    <style name="OnbButton" parent="Widget.Material3.Button.TonalButton">
+        <item name="android:layout_marginTop">8dp</item>
+        <item name="android:layout_gravity">end</item>
+    </style>
+</resources>

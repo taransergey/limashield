@@ -1,0 +1,14 @@
+*.iml
+.gradle/
+.kotlin/
+local.properties
+.idea/
+build/
+captures/
+.externalNativeBuild/
+.cxx/
+*.apk
+*.aab
+
+# Полевые записи содержат реальные координаты — не публикуем
+field-data/

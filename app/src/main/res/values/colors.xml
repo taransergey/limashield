@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="state_off">#616161</color>
+    <color name="state_trusted">#2E7D32</color>
+    <color name="state_spoofed">#C77800</color>
+    <color name="state_recovering">#1565C0</color>
+    <color name="state_blind">#C62828</color>
+    <color name="ic_launcher_background">#0B3D2E</color>
+    <color name="warn_bg">#FFF3E0</color>
+    <color name="warn_fg">#B23C17</color>
+</resources>

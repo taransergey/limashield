@@ -1,0 +1,137 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name" translatable="false">LimaShield</string>
+    <string name="app_subtitle">GPS anti-spoofing filter: “Lima” detection, cell-tower fallback</string>
+    <string name="credit_footer" translatable="false">From Tarik for motorcycling</string>
+    <string name="settings_title">Settings</string>
+    <string name="events_title">EVENTS</string>
+
+    <string name="btn_start">Start</string>
+    <string name="btn_stop">Stop</string>
+    <string name="btn_mock_setup">Mock access</string>
+    <string name="btn_settings">Settings</string>
+    <string name="btn_share_log">Share log</string>
+    <string name="share_subject" translatable="false">LimaShield field log</string>
+    <string name="share_email" translatable="false">taransergey@gmail.com</string>
+
+    <string name="warn_mock">⚠ LimaShield is not set as the mock location app — the filter cannot override coordinates. Tap to set it up.</string>
+    <string name="warn_sim">⚠ Spoofing simulation is active (Settings → Debug)</string>
+
+    <string name="state_off_title">Off</string>
+    <string name="state_off_detail">Filter is inactive, system uses raw providers</string>
+    <string name="state_trusted_title">GNSS clean</string>
+    <string name="state_trusted_detail">System runs on real GPS</string>
+    <string name="state_spoofed_title">SPOOFING — cell fallback</string>
+    <string name="state_spoofed_detail">GNSS is spoofed. Serving network position</string>
+    <string name="state_recovering_title">Checking GNSS recovery</string>
+    <string name="state_recovering_detail">GNSS looks plausible — probation period</string>
+    <string name="state_blind_title">POSITION FROZEN</string>
+    <string name="state_blind_detail">No trusted sources. Serving last good position</string>
+    <string name="peek_hint">Peek: sampling real GNSS…</string>
+    <string name="gnss_silent">⚠ No GNSS fixes for %1$d s while %2$d sats visible — jamming?</string>
+    <string name="mock_hint">Mock active: %1$s</string>
+    <string name="since_time">since %1$s</string>
+
+    <string name="gnss_info_sats">GNSS: %1$d/%2$d sats</string>
+    <string name="no_fixes">no fixes</string>
+    <string name="net_label">Network:</string>
+    <string name="acc_m">±%1$.0f m</string>
+    <string name="speed_kmh">%1$.0f km/h</string>
+    <string name="net_acc_age">±%1$.0f m, %2$d s ago</string>
+
+    <string name="toast_no_loc_perm">Location permission is required for the filter to work</string>
+    <string name="toast_mock_reminder">Don\'t forget to set LimaShield as the mock location app</string>
+
+    <string name="battery_title">Battery optimization</string>
+    <string name="battery_msg">To keep the filter alive on the road, exclude LimaShield from battery optimization.</string>
+    <string name="battery_ok">Exclude</string>
+    <string name="battery_later">Later</string>
+
+    <string name="mockdlg_title">Set mock location provider</string>
+    <string name="mockdlg_msg">In developer settings:\n\n1. Find “Select mock location app”\n2. Choose LimaShield\n\nIf there is no Developer options section: Settings → About phone → tap “Build number” 7 times.</string>
+    <string name="mockdlg_open">Open</string>
+    <string name="cancel">Cancel</string>
+    <string name="devsettings_error">Could not open developer settings</string>
+
+    <string name="notif_channel">Filter status</string>
+    <string name="notif_stop">Stop</string>
+    <string name="notif_problem">⚠ Problem</string>
+    <string name="notif_ok">✓ OK</string>
+
+    <string name="marker_map_jumped">💥 Map jumped</string>
+    <string name="marker_false_alarm">🤔 False alarm</string>
+    <string name="marker_no_position">📵 No position</string>
+    <string name="marker_note">✍️ Note</string>
+    <string name="marker_saved">Marked in the log</string>
+    <string name="note_title">Field note</string>
+    <string name="note_hint">What happened?</string>
+    <string name="save">Save</string>
+
+    <string name="boot_title">LimaShield is not running</string>
+    <string name="boot_text">The phone rebooted. Start the filter?</string>
+    <string name="boot_start">Start</string>
+
+    <string name="notif_channel_alerts">Important alerts</string>
+    <string name="killed_title">The system stopped the filter!</string>
+    <string name="killed_text">Tap Start. Then allow background activity (setup step 4)</string>
+    <string name="onb_step4_hint_coloros">On realme also: Settings → Battery → LimaShield → Allow background activity; and Settings → Apps → Auto-launch → enable LimaShield.</string>
+    <string name="onb_step4_hint_miui">On Xiaomi also: Settings → Apps → LimaShield → Autostart on, Battery saver → No restrictions.</string>
+    <string name="onb_step4_hint_generic"></string>
+
+    <string name="pref_field_rec">Field recording to files</string>
+    <string name="pref_field_rec_sum">Write all events and raw fixes to daily files (shared as a zip). Kept for 7 days</string>
+
+    <string name="tile_off">off</string>
+    <string name="tile_trusted">GNSS ✓</string>
+    <string name="tile_spoofed">cell fallback</string>
+    <string name="tile_recovering">checking</string>
+    <string name="tile_blind">frozen</string>
+
+    <string name="onb_title">LimaShield setup</string>
+    <string name="onb_intro">For the filter to protect every app on this phone, Android requires a one-time setup. Follow the steps — the checkmarks update automatically.</string>
+    <string name="onb_step1_title">1. Location access</string>
+    <string name="onb_step1_desc">The filter needs GPS and network position to detect spoofing.</string>
+    <string name="onb_step1_btn">Grant</string>
+    <string name="onb_step2_title">2. Developer mode</string>
+    <string name="onb_step2_desc">Open About phone and tap “Build number” 7 times until it says you are now a developer.\n%1$s</string>
+    <string name="onb_step2_btn">Open About phone</string>
+    <string name="onb_step2_hint_coloros">On this phone: Settings → About device → Version → tap “Build number” 7 times.</string>
+    <string name="onb_step2_hint_miui">On this phone: Settings → About phone → tap “MIUI version” 7 times.</string>
+    <string name="onb_step2_hint_samsung">On this phone: Settings → About phone → Software information → tap “Build number” 7 times.</string>
+    <string name="onb_step2_hint_generic">Can\'t find it? Search Settings for “build number”.</string>
+    <string name="onb_step3_title">3. Mock location app</string>
+    <string name="onb_step3_desc">In developer options find “Select mock location app” (usually under Debugging) and choose LimaShield.\nCan\'t find it? Use the Settings search: type “mock”.</string>
+    <string name="onb_step3_btn">Open developer options</string>
+    <string name="onb_step3_toast">Find “Select mock location app” → LimaShield</string>
+    <string name="onb_step3_need_step2">First enable Developer mode (step 2)</string>
+    <string name="onb_step4_title">4. Battery (recommended)</string>
+    <string name="onb_step4_desc">Exclude LimaShield from battery optimization so the system doesn\'t kill the filter on the road.</string>
+    <string name="onb_step4_btn">Exclude</string>
+    <string name="onb_all_set">Everything is set up!</string>
+    <string name="onb_start_filter">Start the filter</string>
+    <string name="onb_done">Done</string>
+
+    <string name="prefs_cat_detection">Detection thresholds</string>
+    <string name="pref_divergence">C1: GNSS/network divergence, km</string>
+    <string name="pref_teleport">C2: teleport, km</string>
+    <string name="pref_max_speed">C3: max speed, km/h</string>
+    <string name="pref_drag">C6: drag-off minimum, m</string>
+    <string name="pref_drag_sum">Base GNSS/network divergence that counts as a slow pull (auto-scaled by network accuracy and fix age)</string>
+    <string name="prefs_cat_fsm">State machine</string>
+    <string name="pref_recovery">SPOOFED exit hysteresis, s</string>
+    <string name="pref_blind_after">BLIND after network silence, s</string>
+    <string name="pref_blind_recover">BLIND recovery radius, km</string>
+    <string name="prefs_cat_peek">Peek — GNSS sampling under mock</string>
+    <string name="pref_peek_interval">Peek interval, s</string>
+    <string name="pref_peek_interval_sum">How often to unmock gps to sample the real signal</string>
+    <string name="pref_peek_window">Peek window, s</string>
+    <string name="pref_peek_window_sum">How long to wait for a real GNSS fix</string>
+    <string name="prefs_cat_mock">Mock output</string>
+    <string name="pref_mock_fused">Mock fused via Play Services</string>
+    <string name="pref_mock_fused_sum">Also override position for Google FLP consumers (Google Maps). Applied on service restart</string>
+    <string name="pref_freeze">Freeze position in BLIND</string>
+    <string name="pref_freeze_sum">Off: serve nothing in BLIND</string>
+    <string name="prefs_cat_debug">Debug</string>
+    <string name="pref_sim">Spoofing simulation</string>
+    <string name="pref_sim_sum">Replace GNSS input with a circle over Lima (~200 km/h). Filter test without EW</string>
+</resources>

@@ -1,0 +1,133 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_subtitle">Фільтр GPS-спуфінгу: детекція «Ліми», перехід на вежі</string>
+    <string name="settings_title">Налаштування</string>
+    <string name="events_title">ПОДІЇ</string>
+
+    <string name="btn_start">Запустити</string>
+    <string name="btn_stop">Зупинити</string>
+    <string name="btn_mock_setup">Mock-доступ</string>
+    <string name="btn_settings">Налаштування</string>
+    <string name="btn_share_log">Поділитися логом</string>
+
+    <string name="warn_mock">⚠ LimaShield не призначено застосунком для фіктивних місцезнаходжень — фільтр не зможе підміняти координати. Натисніть, щоб налаштувати.</string>
+    <string name="warn_sim">⚠ Активна симуляція спуфінгу (Налаштування → Налагодження)</string>
+
+    <string name="state_off_title">Вимкнено</string>
+    <string name="state_off_detail">Фільтр не активний, система на сирих провайдерах</string>
+    <string name="state_trusted_title">GNSS чистий</string>
+    <string name="state_trusted_detail">Система працює на реальному GPS</string>
+    <string name="state_spoofed_title">СПУФІНГ — веду по вежах</string>
+    <string name="state_spoofed_detail">GNSS підмінено. Назовні йде мережева позиція</string>
+    <string name="state_recovering_title">Перевіряю відновлення GNSS</string>
+    <string name="state_recovering_detail">GNSS схожий на правду — пробація</string>
+    <string name="state_blind_title">ПОЗИЦІЮ ЗАМОРОЖЕНО</string>
+    <string name="state_blind_detail">Немає достовірних джерел. Віддаю останню позицію</string>
+    <string name="peek_hint">Peek: перевіряю реальний GNSS…</string>
+    <string name="gnss_silent">⚠ GNSS мовчить %1$d с при %2$d видимих супутниках — глушіння?</string>
+    <string name="mock_hint">Мок активний: %1$s</string>
+    <string name="since_time">з %1$s</string>
+
+    <string name="gnss_info_sats">GNSS: %1$d/%2$d супутн.</string>
+    <string name="no_fixes">немає фіксів</string>
+    <string name="net_label">Мережа:</string>
+    <string name="acc_m">±%1$.0f м</string>
+    <string name="speed_kmh">%1$.0f км/год</string>
+    <string name="net_acc_age">±%1$.0f м, %2$d с тому</string>
+
+    <string name="toast_no_loc_perm">Без дозволу на локацію фільтр не працює</string>
+    <string name="toast_mock_reminder">Не забудьте призначити LimaShield застосунком для фіктивних місцезнаходжень</string>
+
+    <string name="battery_title">Оптимізація батареї</string>
+    <string name="battery_msg">Щоб система не вбивала фільтр у дорозі, виключіть LimaShield з оптимізації батареї.</string>
+    <string name="battery_ok">Виключити</string>
+    <string name="battery_later">Пізніше</string>
+
+    <string name="mockdlg_title">Призначити mock-провайдер</string>
+    <string name="mockdlg_msg">У налаштуваннях розробника:\n\n1. Знайдіть пункт «Вибрати застосунок для фіктивних місцезнаходжень»\n2. Виберіть LimaShield\n\nЯкщо розділу «Для розробників» немає: Налаштування → Про телефон → 7 разів натисніть «Номер збірки».</string>
+    <string name="mockdlg_open">Відкрити</string>
+    <string name="cancel">Скасувати</string>
+    <string name="devsettings_error">Не вдалося відкрити налаштування розробника</string>
+
+    <string name="notif_channel">Стан фільтра</string>
+    <string name="notif_stop">Стоп</string>
+    <string name="notif_problem">⚠ Проблема</string>
+    <string name="notif_ok">✓ ОК</string>
+
+    <string name="marker_map_jumped">💥 Карта полетіла</string>
+    <string name="marker_false_alarm">🤔 Хибна тривога</string>
+    <string name="marker_no_position">📵 Немає позиції</string>
+    <string name="marker_note">✍️ Нотатка</string>
+    <string name="marker_saved">Позначено в лозі</string>
+    <string name="note_title">Польова нотатка</string>
+    <string name="note_hint">Що сталося?</string>
+    <string name="save">Зберегти</string>
+
+    <string name="boot_title">LimaShield не запущено</string>
+    <string name="boot_text">Телефон перезавантажився. Запустити фільтр?</string>
+    <string name="boot_start">Запустити</string>
+
+    <string name="notif_channel_alerts">Важливі сповіщення</string>
+    <string name="killed_title">Система зупинила фільтр!</string>
+    <string name="killed_text">Натисніть «Запустити». Потім дозвольте фонову активність (крок 4 майстра)</string>
+    <string name="onb_step4_hint_coloros">На realme додатково: Налаштування → Батарея → LimaShield → «Дозволити фонову активність»; і Налаштування → Застосунки → Автозапуск → увімкнути LimaShield.</string>
+    <string name="onb_step4_hint_miui">На Xiaomi додатково: Налаштування → Застосунки → LimaShield → Автозапуск увімк, Економія батареї → «Без обмежень».</string>
+    <string name="onb_step4_hint_generic"></string>
+
+    <string name="pref_field_rec">Польовий запис у файли</string>
+    <string name="pref_field_rec_sum">Писати всі події та сирі фікси в подобові файли (вивантажуються zip-архівом). Зберігаються 7 днів</string>
+
+    <string name="tile_off">вимк</string>
+    <string name="tile_trusted">GNSS ✓</string>
+    <string name="tile_spoofed">по вежах</string>
+    <string name="tile_recovering">перевірка</string>
+    <string name="tile_blind">заморожено</string>
+
+    <string name="onb_title">Налаштування LimaShield</string>
+    <string name="onb_intro">Щоб фільтр захищав усі застосунки телефона, Android вимагає одноразове налаштування. Ідіть за кроками — галочки оновлюються самі.</string>
+    <string name="onb_step1_title">1. Доступ до геолокації</string>
+    <string name="onb_step1_desc">Фільтру потрібні GPS і мережева позиція, щоб виявляти спуфінг.</string>
+    <string name="onb_step1_btn">Надати</string>
+    <string name="onb_step2_title">2. Режим розробника</string>
+    <string name="onb_step2_desc">Відкрийте «Про телефон» і натисніть 7 разів на «Номер збірки», доки не з\'явиться повідомлення, що ви розробник.\n%1$s</string>
+    <string name="onb_step2_btn">Відкрити «Про телефон»</string>
+    <string name="onb_step2_hint_coloros">На цьому телефоні: Налаштування → Про пристрій → Версія → 7 разів по «Номер збірки».</string>
+    <string name="onb_step2_hint_miui">На цьому телефоні: Налаштування → Про телефон → 7 разів по «Версія MIUI».</string>
+    <string name="onb_step2_hint_samsung">На цьому телефоні: Налаштування → Відомості про телефон → Відомості про ПЗ → 7 разів по «Номер збірки».</string>
+    <string name="onb_step2_hint_generic">Не знаходите — скористайтеся пошуком у налаштуваннях: «номер збірки».</string>
+    <string name="onb_step3_title">3. Застосунок для фіктивних місцезнаходжень</string>
+    <string name="onb_step3_desc">У налаштуваннях розробника знайдіть пункт «Вибрати застосунок для фіктивних місцезнаходжень» (зазвичай у розділі «Налагодження») і виберіть LimaShield.\nНе знаходите — пошук у налаштуваннях: «фіктив» або «mock».</string>
+    <string name="onb_step3_btn">Відкрити налаштування розробника</string>
+    <string name="onb_step3_toast">Знайдіть «застосунок для фіктивних місцезнаходжень» → LimaShield</string>
+    <string name="onb_step3_need_step2">Спершу ввімкніть режим розробника (крок 2)</string>
+    <string name="onb_step4_title">4. Батарея (рекомендовано)</string>
+    <string name="onb_step4_desc">Виключіть LimaShield з оптимізації батареї, щоб система не вбивала фільтр у дорозі.</string>
+    <string name="onb_step4_btn">Виключити</string>
+    <string name="onb_all_set">Усе налаштовано!</string>
+    <string name="onb_start_filter">Запустити фільтр</string>
+    <string name="onb_done">Готово</string>
+
+    <string name="prefs_cat_detection">Пороги детекції</string>
+    <string name="pref_divergence">К1: розбіжність GNSS/мережа, км</string>
+    <string name="pref_teleport">К2: телепортація, км</string>
+    <string name="pref_max_speed">К3: максимальна швидкість, км/год</string>
+    <string name="pref_drag">К6: мінімум утягування, м</string>
+    <string name="pref_drag_sum">Базова розбіжність GNSS/мережа, що вважається повільним відведенням (авто-масштабується за точністю мережі та віком фікса)</string>
+    <string name="prefs_cat_fsm">Кінцевий автомат</string>
+    <string name="pref_recovery">Гістерезис виходу зі SPOOFED, с</string>
+    <string name="pref_blind_after">BLIND після мовчання мережі, с</string>
+    <string name="pref_blind_recover">Повернення з BLIND: радіус від заморозки, км</string>
+    <string name="prefs_cat_peek">Peek — перевірка GNSS під моком</string>
+    <string name="pref_peek_interval">Інтервал peek, с</string>
+    <string name="pref_peek_interval_sum">Як часто знімати мок із gps для перевірки реального сигналу</string>
+    <string name="pref_peek_window">Вікно peek, с</string>
+    <string name="pref_peek_window_sum">Скільки чекати реальний GNSS-фікс</string>
+    <string name="prefs_cat_mock">Mock-вихід</string>
+    <string name="pref_mock_fused">Мокати fused через Play Services</string>
+    <string name="pref_mock_fused_sum">Підміняти позицію й для споживачів Google FLP (Google Maps). Застосовується після перезапуску сервісу</string>
+    <string name="pref_freeze">Заморожувати позицію в BLIND</string>
+    <string name="pref_freeze_sum">Вимк: у BLIND нічого не віддавати</string>
+    <string name="prefs_cat_debug">Налагодження</string>
+    <string name="pref_sim">Симуляція спуфінгу</string>
+    <string name="pref_sim_sum">Підмінити вхідний GNSS колом над Лімою (~200 км/год). Перевірка фільтра без РЕБ</string>
+</resources>

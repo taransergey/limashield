@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <PreferenceCategory app:title="@string/prefs_cat_detection">
+        <EditTextPreference
+            app:key="divergence_km"
+            app:title="@string/pref_divergence"
+            app:defaultValue="10"
+            app:useSimpleSummaryProvider="true" />
+        <EditTextPreference
+            app:key="teleport_km"
+            app:title="@string/pref_teleport"
+            app:defaultValue="100"
+            app:useSimpleSummaryProvider="true" />
+        <EditTextPreference
+            app:key="max_speed_kmh"
+            app:title="@string/pref_max_speed"
+            app:defaultValue="300"
+            app:useSimpleSummaryProvider="true" />
+        <EditTextPreference
+            app:key="drag_min_m"
+            app:title="@string/pref_drag"
+            app:summary="@string/pref_drag_sum"
+            app:defaultValue="600" />
+    </PreferenceCategory>
+
+    <PreferenceCategory app:title="@string/prefs_cat_fsm">
+        <EditTextPreference
+            app:key="recovery_s"
+            app:title="@string/pref_recovery"
+            app:defaultValue="45"
+            app:useSimpleSummaryProvider="true" />
+        <EditTextPreference
+            app:key="blind_after_s"
+            app:title="@string/pref_blind_after"
+            app:defaultValue="30"
+            app:useSimpleSummaryProvider="true" />
+        <EditTextPreference
+            app:key="blind_recover_km"
+            app:title="@string/pref_blind_recover"
+            app:defaultValue="5"
+            app:useSimpleSummaryProvider="true" />
+    </PreferenceCategory>
+
+    <PreferenceCategory app:title="@string/prefs_cat_peek">
+        <EditTextPreference
+            app:key="peek_interval_s"
+            app:title="@string/pref_peek_interval"
+            app:summary="@string/pref_peek_interval_sum"
+            app:defaultValue="45" />
+        <EditTextPreference
+            app:key="peek_window_s"
+            app:title="@string/pref_peek_window"
+            app:summary="@string/pref_peek_window_sum"
+            app:defaultValue="10" />
+    </PreferenceCategory>
+
+    <PreferenceCategory app:title="@string/prefs_cat_mock">
+        <SwitchPreferenceCompat
+            app:key="mock_fused"
+            app:title="@string/pref_mock_fused"
+            app:summary="@string/pref_mock_fused_sum"
+            app:defaultValue="true" />
+        <SwitchPreferenceCompat
+            app:key="freeze_blind"
+            app:title="@string/pref_freeze"
+            app:summary="@string/pref_freeze_sum"
+            app:defaultValue="true" />
+    </PreferenceCategory>
+
+    <PreferenceCategory app:title="@string/prefs_cat_debug">
+        <SwitchPreferenceCompat
+            app:key="field_recording"
+            app:title="@string/pref_field_rec"
+            app:summary="@string/pref_field_rec_sum"
+            app:defaultValue="true" />
+        <SwitchPreferenceCompat
+            app:key="simulate_spoof"
+            app:title="@string/pref_sim"
+            app:summary="@string/pref_sim_sum"
+            app:defaultValue="false" />
+    </PreferenceCategory>
+</PreferenceScreen>

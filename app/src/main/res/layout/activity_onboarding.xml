@@ -1,0 +1,174 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:fitsSystemWindows="true">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="16dp">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/onb_title"
+            android:textSize="22sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
+            android:layout_marginBottom="14dp"
+            android:text="@string/onb_intro"
+            android:textSize="13sp"
+            android:alpha="0.75" />
+
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/cardStep1"
+            style="@style/OnbCard"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
+
+            <LinearLayout style="@style/OnbCardInner"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content">
+
+                <LinearLayout style="@style/OnbCardHeader"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content">
+                    <TextView android:id="@+id/statusStep1" style="@style/OnbStatus"
+                        android:layout_width="wrap_content" android:layout_height="wrap_content" />
+                    <TextView style="@style/OnbTitle"
+                        android:layout_width="wrap_content" android:layout_height="wrap_content"
+                        android:text="@string/onb_step1_title" />
+                </LinearLayout>
+
+                <TextView style="@style/OnbDesc"
+                    android:layout_width="match_parent" android:layout_height="wrap_content"
+                    android:text="@string/onb_step1_desc" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnStep1" style="@style/OnbButton"
+                    android:layout_width="wrap_content" android:layout_height="wrap_content"
+                    android:text="@string/onb_step1_btn" />
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/cardStep2"
+            style="@style/OnbCard"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
+
+            <LinearLayout style="@style/OnbCardInner"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content">
+
+                <LinearLayout style="@style/OnbCardHeader"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content">
+                    <TextView android:id="@+id/statusStep2" style="@style/OnbStatus"
+                        android:layout_width="wrap_content" android:layout_height="wrap_content" />
+                    <TextView style="@style/OnbTitle"
+                        android:layout_width="wrap_content" android:layout_height="wrap_content"
+                        android:text="@string/onb_step2_title" />
+                </LinearLayout>
+
+                <TextView android:id="@+id/descStep2" style="@style/OnbDesc"
+                    android:layout_width="match_parent" android:layout_height="wrap_content" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnStep2" style="@style/OnbButton"
+                    android:layout_width="wrap_content" android:layout_height="wrap_content"
+                    android:text="@string/onb_step2_btn" />
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/cardStep3"
+            style="@style/OnbCard"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
+
+            <LinearLayout style="@style/OnbCardInner"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content">
+
+                <LinearLayout style="@style/OnbCardHeader"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content">
+                    <TextView android:id="@+id/statusStep3" style="@style/OnbStatus"
+                        android:layout_width="wrap_content" android:layout_height="wrap_content" />
+                    <TextView style="@style/OnbTitle"
+                        android:layout_width="wrap_content" android:layout_height="wrap_content"
+                        android:text="@string/onb_step3_title" />
+                </LinearLayout>
+
+                <TextView style="@style/OnbDesc"
+                    android:layout_width="match_parent" android:layout_height="wrap_content"
+                    android:text="@string/onb_step3_desc" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnStep3" style="@style/OnbButton"
+                    android:layout_width="wrap_content" android:layout_height="wrap_content"
+                    android:text="@string/onb_step3_btn" />
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/cardStep4"
+            style="@style/OnbCard"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
+
+            <LinearLayout style="@style/OnbCardInner"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content">
+
+                <LinearLayout style="@style/OnbCardHeader"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content">
+                    <TextView android:id="@+id/statusStep4" style="@style/OnbStatus"
+                        android:layout_width="wrap_content" android:layout_height="wrap_content" />
+                    <TextView style="@style/OnbTitle"
+                        android:layout_width="wrap_content" android:layout_height="wrap_content"
+                        android:text="@string/onb_step4_title" />
+                </LinearLayout>
+
+                <TextView android:id="@+id/descStep4" style="@style/OnbDesc"
+                    android:layout_width="match_parent" android:layout_height="wrap_content"
+                    android:text="@string/onb_step4_desc" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnStep4" style="@style/OnbButton"
+                    android:layout_width="wrap_content" android:layout_height="wrap_content"
+                    android:text="@string/onb_step4_btn" />
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <TextView
+            android:id="@+id/textAllSet"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            android:gravity="center"
+            android:text="@string/onb_all_set"
+            android:textSize="15sp"
+            android:textStyle="bold"
+            android:textColor="@color/state_trusted"
+            android:visibility="gone" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnFinish"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="@string/onb_start_filter"
+            android:textSize="16sp"
+            android:visibility="gone" />
+    </LinearLayout>
+</ScrollView>
