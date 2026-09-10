@@ -45,6 +45,10 @@ class MockOutput(
     var mockDenied: Boolean = false
         private set
 
+    /** gps действительно подменён (в FULL это и есть «защита активна»). */
+    val gpsEngaged: Boolean
+        get() = LocationManager.GPS_PROVIDER in added
+
     private val added = mutableSetOf<String>()
     private var flpMockOn = false
 
@@ -81,6 +85,35 @@ class MockOutput(
             try {
                 lm.removeTestProvider(p)
             } catch (_: Exception) {
+            }
+        }
+    }
+
+    /**
+     * Повторная попытка включить недостающие тест-провайдеры: mock-доступ могли
+     * выдать (или вернуть) уже после перехода в SPOOFED — щит не должен молчать.
+     */
+    fun retryMissing() {
+        when (mode) {
+            MockMode.FULL -> {
+                addProvider(LocationManager.GPS_PROVIDER)
+                addProvider(fusedName())
+            }
+            MockMode.PARTIAL -> addProvider(fusedName())
+            MockMode.OFF -> Unit
+        }
+    }
+
+    companion object {
+        /** Зачистка остаточных тест-провайдеров без экземпляра (после force-kill процесса). */
+        fun cleanupRemnants(ctx: Context) {
+            val lm = ctx.getSystemService(LocationManager::class.java) ?: return
+            val fused = if (Build.VERSION.SDK_INT >= 31) LocationManager.FUSED_PROVIDER else "fused"
+            for (p in listOf(LocationManager.GPS_PROVIDER, fused)) {
+                try {
+                    lm.removeTestProvider(p)
+                } catch (_: Exception) {
+                }
             }
         }
     }

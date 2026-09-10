@@ -68,6 +68,8 @@
     <string name="boot_start">Запустить</string>
 
     <string name="notif_channel_alerts">Важные оповещения</string>
+    <string name="alert_mock_title">Защита НЕ активна!</string>
+    <string name="alert_mock_text">Нет mock-доступа — телефон остался на подделанном GPS. Откройте мастер настройки и назначьте LimaShield приложением для фиктивных местоположений.</string>
     <string name="killed_title">Система остановила фильтр!</string>
     <string name="killed_text">Нажмите «Запустить». Затем разрешите фоновую активность (шаг 4 мастера)</string>
     <string name="onb_step4_hint_coloros">На realme дополнительно: Настройки → Батарея → LimaShield → «Разрешить фоновую активность»; и Настройки → Приложения → Автозапуск → включить LimaShield.</string>

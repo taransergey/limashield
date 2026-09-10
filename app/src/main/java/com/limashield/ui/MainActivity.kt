@@ -36,9 +36,12 @@ import com.limashield.log.FieldRecorder
 import com.limashield.log.RawLog
 import com.limashield.log.logFieldMarker
 import com.limashield.service.LocationFilterService
+import com.limashield.service.MockOutput
 import com.limashield.util.SetupStatus
 import com.limashield.util.hasLocationPermission
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.io.File
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -101,6 +104,11 @@ class MainActivity : AppCompatActivity() {
     override fun onResume() {
         super.onResume()
         b.warnMock.isVisible = !SetupStatus.mockAllowed(this)
+        // После force-kill процесса тест-провайдер мог остаться висеть в системе
+        // с замороженной точкой — зачищаем при каждом открытии, если сервис не работает
+        if (!LocationFilterService.isRunning) {
+            MockOutput.cleanupRemnants(this)
+        }
     }
 
     private fun onToggle() {
@@ -169,33 +177,32 @@ class MainActivity : AppCompatActivity() {
     // ---- шаринг лога: zip полевых файлов дня через FileProvider → Telegram/почта ----
 
     private fun shareLog() {
-        val dir = File(cacheDir, "logs").apply { mkdirs() }
-        val stamp = SimpleDateFormat("yyyyMMdd-HHmmss", Locale.US).format(Date())
-
-        // свежий срез колец — отдельным файлом внутрь архива
-        val current = File(dir, "current-session.txt").apply { writeText(buildLogDump()) }
-        val zip = File(dir, "limashield-$stamp.zip")
-        val zipped = FieldRecorder.zipTo(zip, listOf(current))
-        current.delete()
-
-        val file: File
-        val mime: String
-        if (zipped) {
-            file = zip
-            mime = "application/zip"
-        } else {
-            file = File(dir, "limashield-log-$stamp.txt").apply { writeText(buildLogDump()) }
-            mime = "text/plain"
+        // подготовка архива — файловая работа, уводим с main thread
+        lifecycleScope.launch {
+            val (file, mime) = withContext(Dispatchers.IO) {
+                val dir = File(cacheDir, "logs").apply { mkdirs() }
+                val stamp = SimpleDateFormat("yyyyMMdd-HHmmss", Locale.US).format(Date())
+                val current = File(dir, "current-session.txt").apply { writeText(buildLogDump()) }
+                val zip = File(dir, "limashield-$stamp.zip")
+                val zipped = FieldRecorder.zipTo(zip, listOf(current))
+                current.delete()
+                if (zipped) {
+                    zip to "application/zip"
+                } else {
+                    File(dir, "limashield-log-$stamp.txt")
+                        .apply { writeText(buildLogDump()) } to "text/plain"
+                }
+            }
+            val uri = FileProvider.getUriForFile(this@MainActivity, "$packageName.fileprovider", file)
+            val send = Intent(Intent.ACTION_SEND).apply {
+                type = mime
+                putExtra(Intent.EXTRA_STREAM, uri)
+                putExtra(Intent.EXTRA_EMAIL, arrayOf(getString(R.string.share_email)))
+                putExtra(Intent.EXTRA_SUBJECT, getString(R.string.share_subject))
+                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            }
+            startActivity(Intent.createChooser(send, getString(R.string.btn_share_log)))
         }
-        val uri = FileProvider.getUriForFile(this, "$packageName.fileprovider", file)
-        val send = Intent(Intent.ACTION_SEND).apply {
-            type = mime
-            putExtra(Intent.EXTRA_STREAM, uri)
-            putExtra(Intent.EXTRA_EMAIL, arrayOf(getString(R.string.share_email)))
-            putExtra(Intent.EXTRA_SUBJECT, getString(R.string.share_subject))
-            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-        }
-        startActivity(Intent.createChooser(send, getString(R.string.btn_share_log)))
     }
 
     private fun buildLogDump(): String {
@@ -256,6 +263,11 @@ class MainActivity : AppCompatActivity() {
             color = Color.parseColor("#616161")
             title = getString(R.string.state_off_title)
             detail = getString(R.string.state_off_detail)
+        } else if (!ui.mockPermissionOk) {
+            // Мок должен работать, но не работает: телефон фактически на поддельном GPS
+            color = Color.parseColor("#B71C1C")
+            title = getString(R.string.alert_mock_title)
+            detail = getString(R.string.alert_mock_text)
         } else {
             color = when (ui.state) {
                 FilterState.TRUSTED -> Color.parseColor("#2E7D32")

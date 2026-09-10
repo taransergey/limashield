@@ -8,6 +8,9 @@ import java.io.FileWriter
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import java.util.concurrent.Callable
+import java.util.concurrent.Executors
+import java.util.concurrent.TimeUnit
 import java.util.zip.ZipEntry
 import java.util.zip.ZipOutputStream
 
@@ -15,6 +18,9 @@ import java.util.zip.ZipOutputStream
  * Полевая запись на диск (M5): события и сырой поток фиксов пишутся в files/field/
  * посуточными файлами, переживают перезапуски процесса и выгружаются zip-архивом.
  * Кольца EventLog/RawLog в памяти — оперативный срез; здесь — полная история дня.
+ *
+ * Вся файловая работа — на выделенном фоновом потоке (вызовы приходят с main).
+ * Исключение — crash(): пишется синхронно, чтобы успеть до смерти процесса.
  */
 object FieldRecorder {
 
@@ -31,26 +37,69 @@ object FieldRecorder {
     private var rawDay = ""
     private var rawCount = 0
 
-    fun init(ctx: Context) {
-        dir = File(ctx.filesDir, "field").apply { mkdirs() }
-        cleanupOld()
-    }
-
-    /** События — редкие; пишем append с немедленным закрытием, чтобы ничего не терять при kill. */
-    @Synchronized
-    fun event(level: String, msg: String) {
-        if (!enabled) return
-        val d = dir ?: return
-        runCatching {
-            File(d, "events-${dayFmt.format(Date())}.log")
-                .appendText("${tsFmt.format(Date())} [$level] $msg\n")
+    private val io = Executors.newSingleThreadExecutor { r ->
+        Thread(r, "field-recorder").apply {
+            isDaemon = true
+            priority = Thread.MIN_PRIORITY
         }
     }
 
-    /** Сырые фиксы — 1 Гц; буферизованная запись, flush каждые 30 строк. */
-    @Synchronized
+    fun init(ctx: Context) {
+        dir = File(ctx.filesDir, "field").apply { mkdirs() }
+        io.execute { cleanupOld() }
+    }
+
+    fun event(level: String, msg: String) {
+        if (!enabled) return
+        val ts = tsFmt.format(Date())
+        io.execute { writeEvent(ts, level, msg) }
+    }
+
     fun raw(line: String) {
         if (!enabled) return
+        io.execute { writeRaw(line) }
+    }
+
+    fun flush() {
+        io.execute { synchronized(this) { runCatching { rawWriter?.flush() } } }
+    }
+
+    /** Крашрепорт — синхронно и всегда, независимо от enabled. */
+    @Synchronized
+    fun crash(thread: Thread, e: Throwable) {
+        val d = dir ?: return
+        runCatching {
+            File(d, "crash-${dayFmt.format(Date())}.txt")
+                .appendText("${tsFmt.format(Date())} thread=${thread.name}\n${Log.getStackTraceString(e)}\n\n")
+        }
+    }
+
+    fun files(): List<File> =
+        dir?.listFiles()?.filter { it.isFile && it.length() > 0 }?.sortedBy { it.name } ?: emptyList()
+
+    /**
+     * Собрать все полевые файлы (+extra) в zip. Выполняется в очереди записи
+     * (сериализовано с write-операциями); блокирует вызывающий — звать с Dispatchers.IO.
+     * Возвращает false, если писать нечего.
+     */
+    fun zipTo(target: File, extra: List<File> = emptyList()): Boolean = try {
+        io.submit(Callable { doZip(target, extra) }).get(15, TimeUnit.SECONDS)
+    } catch (_: Exception) {
+        false
+    }
+
+    // ---- внутренности, только на потоке io (кроме crash) ----
+
+    @Synchronized
+    private fun writeEvent(ts: String, level: String, msg: String) {
+        val d = dir ?: return
+        runCatching {
+            File(d, "events-${dayFmt.format(Date())}.log").appendText("$ts [$level] $msg\n")
+        }
+    }
+
+    @Synchronized
+    private fun writeRaw(line: String) {
         val d = dir ?: return
         runCatching {
             val day = dayFmt.format(Date())
@@ -66,27 +115,8 @@ object FieldRecorder {
     }
 
     @Synchronized
-    fun flush() {
+    private fun doZip(target: File, extra: List<File>): Boolean {
         runCatching { rawWriter?.flush() }
-    }
-
-    /** Крашрепорт — пишется всегда, независимо от enabled. */
-    @Synchronized
-    fun crash(thread: Thread, e: Throwable) {
-        val d = dir ?: return
-        runCatching {
-            File(d, "crash-${dayFmt.format(Date())}.txt")
-                .appendText("${tsFmt.format(Date())} thread=${thread.name}\n${Log.getStackTraceString(e)}\n\n")
-        }
-    }
-
-    fun files(): List<File> =
-        dir?.listFiles()?.filter { it.isFile && it.length() > 0 }?.sortedBy { it.name } ?: emptyList()
-
-    /** Собрать все полевые файлы (+extra) в zip. Возвращает false, если писать нечего. */
-    @Synchronized
-    fun zipTo(target: File, extra: List<File> = emptyList()): Boolean {
-        flush()
         val all = files() + extra.filter { it.isFile && it.length() > 0 }
         if (all.isEmpty()) return false
         runCatching {

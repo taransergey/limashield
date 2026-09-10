@@ -72,6 +72,8 @@
     <string name="boot_start">Start</string>
 
     <string name="notif_channel_alerts">Important alerts</string>
+    <string name="alert_mock_title">Protection is NOT active!</string>
+    <string name="alert_mock_text">No mock access — the phone stays on spoofed GPS. Open the setup wizard and select LimaShield as the mock location app.</string>
     <string name="killed_title">The system stopped the filter!</string>
     <string name="killed_text">Tap Start. Then allow background activity (setup step 4)</string>
     <string name="onb_step4_hint_coloros">On realme also: Settings → Battery → LimaShield → Allow background activity; and Settings → Apps → Auto-launch → enable LimaShield.</string>

@@ -82,6 +82,9 @@ class LocationFilterService : Service() {
     private var lastCn0Mean = 0.0
     private var lastSatsLogMs = 0L
     private var lastBatteryLogMs = 0L
+    private var fullSinceMs = 0L
+    private var lastMockRetryMs = 0L
+    private var mockAlertActive = false
 
     private val gpsListener = object : LocationListener {
         override fun onLocationChanged(location: Location) = onGnssLocation(location)
@@ -214,7 +217,11 @@ class LocationFilterService : Service() {
         ServiceBus.update { it.copy(lastGnss = fix, gnssSilentSec = null) }
         if (simulator != null) return // при активной симуляции реальный GNSS игнорируется
 
-        if (mock.mode == MockMode.FULL && !peekActive && !passthroughCapable) {
+        // Guard 3 с: фикс мог застрять в очереди доставки до включения мока —
+        // без него ложный passthroughCapable навсегда отключает peek
+        if (mock.mode == MockMode.FULL && !peekActive && !passthroughCapable &&
+            System.currentTimeMillis() - fullSinceMs > 3_000
+        ) {
             passthroughCapable = true
             EventLog.log(
                 EventLog.Level.INFO,
@@ -266,7 +273,56 @@ class LocationFilterService : Service() {
         applyResult(fsm.onTick(now), fromGnss = false)
         schedulePeek(now)
         checkGnssSilence(now)
+        checkMockHealth(now)
         logTelemetry(now)
+    }
+
+    /**
+     * «Щит не должен молчать»: в FULL без реально подменённого gps защита не работает —
+     * телефон остаётся на поддельном GPS. Кричим и периодически пытаемся включиться
+     * (mock-доступ могли выдать позже).
+     */
+    private fun checkMockHealth(now: Long) {
+        val broken = mock.mode == MockMode.FULL && !mock.gpsEngaged
+        if (broken) {
+            if (now - lastMockRetryMs > 10_000) {
+                lastMockRetryMs = now
+                mock.retryMissing()
+            }
+            if (!mock.gpsEngaged && !mockAlertActive) {
+                mockAlertActive = true
+                ServiceBus.update { it.copy(mockPermissionOk = false) }
+                EventLog.log(
+                    EventLog.Level.ERROR,
+                    "PROTECTION INACTIVE: gps mock is not engaged — phone stays on spoofed GPS (no mock permission?)",
+                )
+                postMockAlert()
+            }
+        }
+        if (!broken && mockAlertActive) {
+            if (mock.mode == MockMode.FULL) {
+                EventLog.log(EventLog.Level.INFO, "Mock engaged after retry — protection restored")
+            }
+            mockAlertActive = false
+            ServiceBus.update { it.copy(mockPermissionOk = true) }
+            runCatching { getSystemService(NotificationManager::class.java).cancel(NOTIF_MOCK_ALERT) }
+        }
+    }
+
+    private fun postMockAlert() {
+        val wizardPi = PendingIntent.getActivity(
+            this, 14, Intent(this, com.limashield.ui.OnboardingActivity::class.java),
+            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
+        )
+        val notif = NotificationCompat.Builder(this, App.CHANNEL_ALERTS)
+            .setSmallIcon(R.drawable.ic_shield)
+            .setContentTitle(getString(R.string.alert_mock_title))
+            .setContentText(getString(R.string.alert_mock_text))
+            .setStyle(NotificationCompat.BigTextStyle().bigText(getString(R.string.alert_mock_text)))
+            .setContentIntent(wizardPi)
+            .setAutoCancel(true)
+            .build()
+        runCatching { getSystemService(NotificationManager::class.java).notify(NOTIF_MOCK_ALERT, notif) }
     }
 
     /** Периодическая телеметрия в полевую запись: спутники/C⁄N0 и батарея. */
@@ -337,8 +393,8 @@ class LocationFilterService : Service() {
         mock.apply(desired)
         if (before != MockMode.FULL && mock.mode == MockMode.FULL) {
             nextPeekAt = System.currentTimeMillis() + Prefs.peekIntervalMs(sp)
+            fullSinceMs = System.currentTimeMillis()
         }
-        if (mock.mockDenied) ServiceBus.update { it.copy(mockPermissionOk = false) }
 
         val emit = r.emit
         if (emit != null && !(r.state == FilterState.BLIND && !Prefs.freezeInBlind(sp))) {
@@ -472,6 +528,7 @@ class LocationFilterService : Service() {
         const val ACTION_MARK_PROBLEM = "com.limashield.action.MARK_PROBLEM"
         const val ACTION_MARK_OK = "com.limashield.action.MARK_OK"
         private const val NOTIF_ID = 1
+        private const val NOTIF_MOCK_ALERT = 4
 
         @Volatile
         var isRunning = false

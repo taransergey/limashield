@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.5.2 — 2026-09-10
+Hardening after the first external security review:
+- **The shield no longer stays silent**: if the gps mock cannot engage (mock access
+  revoked/missing) the app shows a red "Protection is NOT active" card, fires a loud
+  alert notification and retries every 10 s until it succeeds.
+- Fixed a race that could permanently disable the peek mechanism (a queued GNSS fix
+  arriving right after mock engagement faked passthrough capability).
+- Leftover mock providers are now cleaned up on every app open (a force-killed process
+  can leave a frozen test provider in the system).
+- Field recording moved off the main thread; log zipping moved to a background dispatcher.
+- Machine-specific JDK path removed from the repo (builds no longer break on Linux/Mac).
+- GitHub Actions CI: unit tests + debug build on every push.
+
 ## 0.5.1 — 2026-09-10
 Response to the first ride analysis (ColorOS stopped the filter after 4.5 minutes):
 - **Self-restart**: if the service is stopped by the system (not by the user), it
