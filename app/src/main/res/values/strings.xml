@@ -105,7 +105,8 @@
     <string name="onb_step2_hint_samsung">On this phone: Settings → About phone → Software information → tap “Build number” 7 times.</string>
     <string name="onb_step2_hint_generic">Can\'t find it? Search Settings for “build number”.</string>
     <string name="onb_step3_title">3. Mock location app</string>
-    <string name="onb_step3_desc">In developer options find “Select mock location app” (usually under Debugging) and choose LimaShield.\nCan\'t find it? Use the Settings search: type “mock”.</string>
+    <string name="onb_step3_desc">In developer options find “Select mock location app” (usually under Debugging) and choose LimaShield.\nCan\'t find it? Use the Settings search: type “mock”.\nIf LimaShield is listed but tapping does nothing (OPPO/realme) — complete step 1 first, then reboot if needed.</string>
+    <string name="onb_step3_need_step1">First grant the location permission (step 1) — otherwise the system ignores the mock app selection</string>
     <string name="onb_step3_btn">Open developer options</string>
     <string name="onb_step3_toast">Find “Select mock location app” → LimaShield</string>
     <string name="onb_step3_need_step2">First enable Developer mode (step 2)</string>

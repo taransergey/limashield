@@ -102,6 +102,12 @@ class OnboardingActivity : AppCompatActivity() {
     }
 
     private fun openDevOptions() {
+        // ColorOS/OPPO silently ignores the mock-app selection until the app
+        // holds the location permission — enforce the step order (field case 2026-09-11)
+        if (!SetupStatus.locationGranted(this)) {
+            Toast.makeText(this, R.string.onb_step3_need_step1, Toast.LENGTH_LONG).show()
+            return
+        }
         if (!SetupStatus.devOptionsEnabled(this)) {
             Toast.makeText(this, R.string.onb_step3_need_step2, Toast.LENGTH_LONG).show()
             return
