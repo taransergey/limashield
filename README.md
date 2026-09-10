@@ -129,3 +129,7 @@ On the emulator: `adb emu geo fix` or GPX playback in Extended Controls.
       thresholds tuned on real Lima recordings — C6, C7 and C8 were born from them
 - [ ] Next: C/N0-based jamming heuristics (the loud-noise signature: ~40 dB-Hz with
       0 satellites used), release signing
+
+## License
+
+[MIT](LICENSE)
