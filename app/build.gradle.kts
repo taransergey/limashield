@@ -1,4 +1,4 @@
-import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+﻿import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
     id("com.android.application")
@@ -13,8 +13,8 @@ android {
         applicationId = "com.limashield"
         minSdk = 26
         targetSdk = 36
-        versionCode = 11
-        versionName = "0.7.1"
+        versionCode = 12
+        versionName = "0.7.2"
     }
 
     buildTypes {

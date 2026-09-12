@@ -65,6 +65,7 @@ class FilterFsm(
 
     private val history = ArrayDeque<Fix>()
     private var lastNet: Fix? = null
+    private var lastNetReceivedMs = 0L
     private var lastGood: Fix? = null   // last position we trust (GNSS in TRUSTED, network in SPOOFED)
     private var spoofStreak = 0
     private var recoveringSinceMs = 0L
@@ -186,6 +187,7 @@ class FilterFsm(
         if (fix.isMock) return FsmResult(state, null, modeFor(state))
         val prevState = state
         lastNet = fix
+        lastNetReceivedMs = nowMs
         val ev = mutableListOf<String>()
         when (state) {
             FilterState.TRUSTED -> Unit
@@ -211,10 +213,12 @@ class FilterFsm(
             FilterState.TRUSTED -> Unit
 
             FilterState.SPOOFED, FilterState.JAMMED -> {
-                // count silence from state entry, not from an already-stale fix:
-                // gives NLP a chance to wake up after the real gps provider is released
-                // (field lesson 2026-09-11: JAMMED fell into BLIND within one second)
-                val silenceRef = maxOf(lastNet?.timeMs ?: 0L, stateEnteredMs)
+                // Count silence from state entry, not from an already-stale fix
+                // (field lesson 2026-09-11: JAMMED fell into BLIND within one second).
+                // Use the RECEIVE time, not fix time: a stationary phone legitimately
+                // gets cached duplicates with an old fix timestamp — the provider is
+                // alive (field lesson 2026-09-12: BLIND flapping while standing still).
+                val silenceRef = maxOf(lastNetReceivedMs, stateEnteredMs)
                 if (nowMs - silenceRef > t.blindAfterNoNetMs) {
                     frozen = lastGood?.copy(timeMs = nowMs)
                     frozenAtMs = nowMs
