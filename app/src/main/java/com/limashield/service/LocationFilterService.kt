@@ -86,6 +86,8 @@ class LocationFilterService : Service() {
     private var fullSinceMs = 0L
     private var lastMockRetryMs = 0L
     private var mockAlertActive = false
+    private var probeFailCount = 0
+    private var lastSatsUpdateMs = 0L
 
     private val gpsListener = object : LocationListener {
         override fun onLocationChanged(location: Location) = onGnssLocation(location)
@@ -119,6 +121,7 @@ class LocationFilterService : Service() {
             lastCn0Mean = cn0.sortedDescending().take(4).let {
                 if (it.isEmpty()) 0.0 else it.sum() / it.size
             }
+            lastSatsUpdateMs = System.currentTimeMillis()
             ServiceBus.update { it.copy(satsUsed = used, satsTotal = status.satelliteCount) }
         }
     }
@@ -229,6 +232,7 @@ class LocationFilterService : Service() {
                 "ROM delivers real GNSS under active mock — periodic peek disabled",
             )
         }
+        probeFailCount = 0 // the engine produced a real fix — probes work at base length again
         applyResult(fsm.onGnss(fix, System.currentTimeMillis()), fromGnss = true)
     }
 
@@ -329,7 +333,9 @@ class LocationFilterService : Service() {
     /** Periodic telemetry into the field recording: satellites/C⁄N0 and battery. */
     private fun logTelemetry(now: Long) {
         if (!FieldRecorder.enabled) return
-        if (now - lastSatsLogMs > 30_000) {
+        // don't log a frozen snapshot: with the mock engaged the GNSS engine is off
+        // and satellite status stops updating (would poison later analysis)
+        if (now - lastSatsLogMs > 30_000 && now - lastSatsUpdateMs < 35_000) {
             lastSatsLogMs = now
             val ui = ServiceBus.ui.value
             FieldRecorder.raw(
@@ -447,17 +453,21 @@ class LocationFilterService : Service() {
         if (simulator != null || passthroughCapable) return
         if (!peekActive && mock.mode == MockMode.FULL && now >= nextPeekAt) {
             peekActive = true
-            peekEndsAt = now + Prefs.probeWindowMs(sp)
+            // Escalating window: an indoor/slow start may need minutes of uninterrupted
+            // tracking — each fruitless probe makes the next one longer (up to 4×)
+            val windowMs = Prefs.probeWindowMs(sp) * (probeFailCount + 1)
+            peekEndsAt = now + windowMs
             val probeMode = probeMockMode()
             mock.apply(probeMode)
             nudgeNetwork()
             EventLog.log(
                 EventLog.Level.INFO,
-                "probe ($probeMode): releasing mock for ${Prefs.probeWindowMs(sp) / 1000} s — sampling real GNSS/network",
+                "probe ($probeMode, attempt ${probeFailCount + 1}): releasing mock for ${windowMs / 1000} s — sampling real GNSS/network",
             )
         } else if (peekActive && now >= peekEndsAt) {
             peekActive = false
             nextPeekAt = now + Prefs.probeIntervalMs(sp)
+            if (probeFailCount < 3) probeFailCount++
             mock.apply(MockMode.FULL)
             EventLog.log(EventLog.Level.INFO, "probe: no real GNSS within the window")
         }
