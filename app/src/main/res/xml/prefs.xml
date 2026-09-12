@@ -54,15 +54,15 @@
 
     <PreferenceCategory app:title="@string/prefs_cat_peek">
         <EditTextPreference
-            app:key="peek_interval_s"
+            app:key="probe_interval_s"
             app:title="@string/pref_peek_interval"
             app:summary="@string/pref_peek_interval_sum"
-            app:defaultValue="45" />
+            app:defaultValue="120" />
         <EditTextPreference
-            app:key="peek_window_s"
+            app:key="probe_window_s"
             app:title="@string/pref_peek_window"
             app:summary="@string/pref_peek_window_sum"
-            app:defaultValue="10" />
+            app:defaultValue="45" />
     </PreferenceCategory>
 
     <PreferenceCategory app:title="@string/prefs_cat_mock">

@@ -3,6 +3,13 @@ package com.limashield.core
 enum class FilterState { TRUSTED, SPOOFED, RECOVERING, BLIND, JAMMED }
 
 /**
+ * Why the GNSS is currently untrusted. BLIND keeps the cause of the state it fell
+ * from, so a returning network fix brings us back to the right state (field lesson
+ * 2026-09-11: labeling a jamming episode "SPOOFED" earned a FALSE_ALARM marker).
+ */
+enum class HostileCause { NONE, SPOOFING, JAMMING }
+
+/**
  * Desired mock output mode.
  *
  * Important (amendment to spec §3.4): an enabled gps test provider FULLY replaces
@@ -51,6 +58,11 @@ class FilterFsm(
     var state: FilterState = FilterState.TRUSTED
         private set
 
+    var hostileCause: HostileCause = HostileCause.NONE
+        private set
+
+    private var stateEnteredMs = 0L
+
     private val history = ArrayDeque<Fix>()
     private var lastNet: Fix? = null
     private var lastGood: Fix? = null   // last position we trust (GNSS in TRUSTED, network in SPOOFED)
@@ -62,6 +74,7 @@ class FilterFsm(
 
     fun onGnss(fix: Fix, nowMs: Long): FsmResult {
         if (fix.isMock) return FsmResult(state, null, modeFor(state)) // echo of our own mock
+        val prevState = state
         if (lastGnssMs != 0L && fix.timeMs - lastGnssMs > 30_000) history.clear()
         history.addLast(fix)
         while (history.size > t.circleMaxFixes + 5) history.removeFirst()
@@ -77,6 +90,7 @@ class FilterFsm(
                     // C8 needs no confirmation: a GPS time warp is never a one-off glitch
                     val instant = SpoofCause.TIME_WARP in verdict.causes
                     if (instant || spoofStreak >= t.spoofConfirmFixes) {
+                        hostileCause = HostileCause.SPOOFING
                         moveTo(
                             FilterState.SPOOFED, ev,
                             if (instant && spoofStreak < t.spoofConfirmFixes) "$verdict (instant: time warp)"
@@ -104,6 +118,7 @@ class FilterFsm(
 
             FilterState.RECOVERING -> {
                 if (verdict.isSpoofed || !converged(fix, nowMs)) {
+                    hostileCause = HostileCause.SPOOFING
                     moveTo(
                         FilterState.SPOOFED, ev,
                         if (verdict.isSpoofed) "relapse: $verdict" else "GNSS diverged from reference"
@@ -113,6 +128,7 @@ class FilterFsm(
                     lastGood = fix
                     frozen = null
                     spoofStreak = 0
+                    hostileCause = HostileCause.NONE
                     moveTo(FilterState.TRUSTED, ev, "GNSS stable for ${t.recoveryHoldMs / 1000} s — back to GNSS")
                 }
             }
@@ -134,8 +150,9 @@ class FilterFsm(
             }
 
             FilterState.JAMMED -> {
-                // GNSS came back: judge it exactly like a SPOOFED peek
+                // GNSS came back: judge it exactly like a SPOOFED probe
                 if (verdict.isSpoofed) {
+                    hostileCause = HostileCause.SPOOFING
                     moveTo(FilterState.SPOOFED, ev, "GNSS is back but spoofed: $verdict")
                     spoofStreak = t.spoofConfirmFixes
                 } else if (converged(fix, nowMs)) {
@@ -146,6 +163,7 @@ class FilterFsm(
                 }
             }
         }
+        if (state != prevState) stateEnteredMs = nowMs
         return FsmResult(state, emitFor(nowMs), modeFor(state), ev, verdict)
     }
 
@@ -157,13 +175,16 @@ class FilterFsm(
     fun onGnssSilence(nowMs: Long): FsmResult {
         val ev = mutableListOf<String>()
         if (state == FilterState.TRUSTED && netAgeMs(nowMs) < t.netFreshMs * 3) {
+            hostileCause = HostileCause.JAMMING
             moveTo(FilterState.JAMMED, ev, "no GNSS fixes while satellites visible — jamming, cell fallback")
+            stateEnteredMs = nowMs
         }
         return FsmResult(state, emitFor(nowMs), modeFor(state), ev)
     }
 
     fun onNetwork(fix: Fix, nowMs: Long): FsmResult {
         if (fix.isMock) return FsmResult(state, null, modeFor(state))
+        val prevState = state
         lastNet = fix
         val ev = mutableListOf<String>()
         when (state) {
@@ -172,19 +193,29 @@ class FilterFsm(
             FilterState.BLIND -> {
                 frozen = null
                 lastGood = fix
-                moveTo(FilterState.SPOOFED, ev, "network fix arrived — cell fallback")
+                if (hostileCause == HostileCause.JAMMING) {
+                    moveTo(FilterState.JAMMED, ev, "network fix arrived — cell fallback (GNSS still silent)")
+                } else {
+                    moveTo(FilterState.SPOOFED, ev, "network fix arrived — cell fallback")
+                }
             }
         }
+        if (state != prevState) stateEnteredMs = nowMs
         return FsmResult(state, emitFor(nowMs), modeFor(state), ev)
     }
 
     fun onTick(nowMs: Long): FsmResult {
+        val prevState = state
         val ev = mutableListOf<String>()
         when (state) {
             FilterState.TRUSTED -> Unit
 
             FilterState.SPOOFED, FilterState.JAMMED -> {
-                if (netAgeMs(nowMs) > t.blindAfterNoNetMs) {
+                // count silence from state entry, not from an already-stale fix:
+                // gives NLP a chance to wake up after the real gps provider is released
+                // (field lesson 2026-09-11: JAMMED fell into BLIND within one second)
+                val silenceRef = maxOf(lastNet?.timeMs ?: 0L, stateEnteredMs)
+                if (nowMs - silenceRef > t.blindAfterNoNetMs) {
                     frozen = lastGood?.copy(timeMs = nowMs)
                     frozenAtMs = nowMs
                     moveTo(FilterState.BLIND, ev, "network silent > ${t.blindAfterNoNetMs / 1000} s — freezing position")
@@ -193,13 +224,19 @@ class FilterFsm(
 
             FilterState.RECOVERING -> {
                 if (nowMs - lastGnssMs > t.gnssGapAbortMs) {
-                    moveTo(FilterState.SPOOFED, ev, "GNSS lost during probation")
-                    spoofStreak = t.spoofConfirmFixes
+                    if (hostileCause == HostileCause.JAMMING) {
+                        moveTo(FilterState.JAMMED, ev, "GNSS lost during probation — back to jamming fallback")
+                    } else {
+                        hostileCause = HostileCause.SPOOFING
+                        moveTo(FilterState.SPOOFED, ev, "GNSS lost during probation")
+                        spoofStreak = t.spoofConfirmFixes
+                    }
                 }
             }
 
             FilterState.BLIND -> Unit
         }
+        if (state != prevState) stateEnteredMs = nowMs
         return FsmResult(state, emitFor(nowMs), modeFor(state), ev)
     }
 

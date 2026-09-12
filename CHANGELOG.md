@@ -1,5 +1,26 @@
 # Changelog
 
+## 0.7.0 — 2026-09-12
+Fixes from the 2026-09-11 test ride (BLIND for 20-30 min stretches, OsmAnd frozen,
+network fixes once per 20-30 minutes, a fair FALSE_ALARM marker from the rider):
+- **Peek → Probe**: rarer but much longer reality checks (120 s interval / 45 s window,
+  both configurable) — the GNSS engine now gets real time to reacquire, as suggested
+  by field experience. A one-shot network request additionally pokes NLP on each probe.
+- **Under jamming the probe releases the mock completely**: with the mock engaged GMS
+  sees "gps has fixes" and keeps NLP asleep (that's why network fixes came once per
+  20-30 min). During an OFF-probe Google location feeds consumers directly and the
+  filter gets a fresh network fix. Under spoofing fused stays protected (PARTIAL probe).
+- **Network-silence countdown starts at state entry** — no more JAMMED→BLIND within
+  one second when the last network fix predates the transition.
+- **The filter remembers the hostile cause**: recovering from BLIND during a jamming
+  episode returns to the purple JAMMED card, not to "SPOOFING" (the source of the
+  rider's FALSE_ALARM).
+
+## 0.6.1 — 2026-09-11
+- Setup wizard: step 3 refuses to open developer options before step 1 (location
+  permission) — the ColorOS mock-app picker silently ignores the selection otherwise
+  (OPPO Reno14 field case); hint text explains the quirk.
+
 ## 0.6.0 — 2026-09-10
 New JAMMED state, born from the evening test ride (5+ hours of total GNSS
 suppression: zero fixes with 26–39 satellites visible):

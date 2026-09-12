@@ -416,6 +416,42 @@ class FilterFsmTest {
     }
 
     @Test
+    fun `вход в JAMMED со старой сетью не проваливается мгновенно в BLIND`() {
+        val s = Sim()
+        cleanDrive(s, 10)
+        // network fix is already ~105 s old at silence detection (field case 2026-09-11:
+        // JAMMED fell into BLIND within one second)
+        s.advance(100L)
+        s.silence()
+        assertEquals(FilterState.JAMMED, s.fsm.state)
+
+        // silence is counted from state entry — NLP gets its 30 s chance
+        repeat(29) { s.advance(); s.tick() }
+        assertEquals(FilterState.JAMMED, s.fsm.state)
+        repeat(3) { s.advance(); s.tick() }
+        assertEquals(FilterState.BLIND, s.fsm.state)
+    }
+
+    @Test
+    fun `BLIND после глушения возвращается в JAMMED а не SPOOFED`() {
+        val s = Sim()
+        val (lat, lon) = cleanDrive(s, 10)
+        s.advance(90L)
+        s.net(lat, lon)
+        s.silence()
+        assertEquals(FilterState.JAMMED, s.fsm.state)
+
+        repeat(35) { s.advance(); s.tick() }
+        assertEquals(FilterState.BLIND, s.fsm.state)
+
+        s.advance()
+        val r = s.net(lat, lon)
+        assertEquals("причина — глушение, не спуфинг", FilterState.JAMMED, r.state)
+        assertEquals(MockMode.FULL, r.mockMode)
+        assertNotNull(r.emit)
+    }
+
+    @Test
     fun `потеря сети в JAMMED замораживает позицию`() {
         val s = Sim()
         val (lat, lon) = cleanDrive(s, 10)

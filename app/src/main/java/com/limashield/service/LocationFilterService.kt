@@ -27,6 +27,7 @@ import com.limashield.R
 import com.limashield.bus.ServiceBus
 import com.limashield.core.FilterFsm
 import com.limashield.core.FilterState
+import com.limashield.core.HostileCause
 import com.limashield.core.Fix
 import com.limashield.core.FsmResult
 import com.limashield.core.MockMode
@@ -398,14 +399,14 @@ class LocationFilterService : Service() {
                 fromGnss -> { // GNSS arrived but is still spoofed — close the window
                     peekActive = false
                 }
-                else -> desired = MockMode.PARTIAL // tick inside the window — keep waiting for GNSS
+                else -> desired = probeMockMode() // tick inside the window — keep waiting for GNSS
             }
         }
 
         val before = mock.mode
         mock.apply(desired)
         if (before != MockMode.FULL && mock.mode == MockMode.FULL) {
-            nextPeekAt = System.currentTimeMillis() + Prefs.peekIntervalMs(sp)
+            nextPeekAt = System.currentTimeMillis() + Prefs.probeIntervalMs(sp)
             fullSinceMs = System.currentTimeMillis()
         }
 
@@ -432,21 +433,44 @@ class LocationFilterService : Service() {
         }
     }
 
+    /**
+     * During a probe under jamming the mock is released completely (OFF) so Google
+     * NLP/FLP can resolve cell/Wi-Fi themselves and feed consumers directly — under
+     * an engaged mock GMS sees "gps has fixes" and keeps NLP asleep (field lesson
+     * 2026-09-11: network fixes arrived once per 20-30 min, OsmAnd froze).
+     * Under spoofing fused stays protected (PARTIAL).
+     */
+    private fun probeMockMode(): MockMode =
+        if (fsm.hostileCause == HostileCause.JAMMING) MockMode.OFF else MockMode.PARTIAL
+
     private fun schedulePeek(now: Long) {
         if (simulator != null || passthroughCapable) return
         if (!peekActive && mock.mode == MockMode.FULL && now >= nextPeekAt) {
             peekActive = true
-            peekEndsAt = now + Prefs.peekWindowMs(sp)
-            mock.apply(MockMode.PARTIAL)
+            peekEndsAt = now + Prefs.probeWindowMs(sp)
+            val probeMode = probeMockMode()
+            mock.apply(probeMode)
+            nudgeNetwork()
             EventLog.log(
                 EventLog.Level.INFO,
-                "peek: unmocking gps for ${Prefs.peekWindowMs(sp) / 1000} s — sampling real GNSS",
+                "probe ($probeMode): releasing mock for ${Prefs.probeWindowMs(sp) / 1000} s — sampling real GNSS/network",
             )
         } else if (peekActive && now >= peekEndsAt) {
             peekActive = false
-            nextPeekAt = now + Prefs.peekIntervalMs(sp)
+            nextPeekAt = now + Prefs.probeIntervalMs(sp)
             mock.apply(MockMode.FULL)
-            EventLog.log(EventLog.Level.INFO, "peek: no real GNSS within the window")
+            EventLog.log(EventLog.Level.INFO, "probe: no real GNSS within the window")
+        }
+    }
+
+    /** One-shot network request: pokes NLP harder than the passive subscription. */
+    @SuppressLint("MissingPermission")
+    private fun nudgeNetwork() {
+        if (Build.VERSION.SDK_INT < 30) return
+        runCatching {
+            lm.getCurrentLocation(LocationManager.NETWORK_PROVIDER, null, mainExecutor) { loc ->
+                loc?.let { onNetworkLocation(it) }
+            }
         }
     }
 

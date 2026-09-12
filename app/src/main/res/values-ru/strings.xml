@@ -25,7 +25,7 @@
     <string name="state_blind_detail">Нет достоверных источников. Отдаю последнюю позицию</string>
     <string name="state_jammed_title">ГЛУШЕНИЕ — веду по вышкам</string>
     <string name="state_jammed_detail">GNSS подавлен (фиксов нет, спутники видны). Наружу идёт сетевая позиция</string>
-    <string name="peek_hint">Peek: проверяю реальный GNSS…</string>
+    <string name="peek_hint">Проба: слушаю реальный GNSS/сеть…</string>
     <string name="gnss_silent">⚠ GNSS молчит %1$d с при %2$d видимых спутниках — глушение?</string>
     <string name="mock_hint">Мок активен: %1$s</string>
     <string name="since_time">с %1$s</string>
@@ -126,11 +126,11 @@
     <string name="pref_jammed_after">JAMMED после тишины GNSS, с</string>
     <string name="pref_jammed_fallback">Вести по вышкам при глушении</string>
     <string name="pref_jammed_fallback_sum">Когда GNSS не даёт фиксов при видимых спутниках — отдавать сетевую позицию (заодно будит геолокацию Google)</string>
-    <string name="prefs_cat_peek">Peek — проверка GNSS под моком</string>
-    <string name="pref_peek_interval">Интервал peek, с</string>
-    <string name="pref_peek_interval_sum">Как часто снимать мок с gps для проверки реального сигнала</string>
-    <string name="pref_peek_window">Окно peek, с</string>
-    <string name="pref_peek_window_sum">Сколько ждать реальный GNSS-фикс</string>
+    <string name="prefs_cat_peek">Проба — проверка реальности под моком</string>
+    <string name="pref_peek_interval">Интервал пробы, с</string>
+    <string name="pref_peek_interval_sum">Как часто снимать мок и слушать реальный сигнал</string>
+    <string name="pref_peek_window">Окно пробы, с</string>
+    <string name="pref_peek_window_sum">Сколько времени GNSS-движку на повторный захват (дольше — лучше при глушении)</string>
     <string name="prefs_cat_mock">Mock-выход</string>
     <string name="pref_mock_fused">Мокать fused через Play Services</string>
     <string name="pref_mock_fused_sum">Подменять позицию и для потребителей Google FLP (Google Maps). Применяется при перезапуске сервиса</string>

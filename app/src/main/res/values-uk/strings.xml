@@ -25,7 +25,7 @@
     <string name="state_blind_detail">Немає достовірних джерел. Віддаю останню позицію</string>
     <string name="state_jammed_title">ГЛУШІННЯ — веду по вежах</string>
     <string name="state_jammed_detail">GNSS придушено (фіксів немає, супутники видно). Назовні йде мережева позиція</string>
-    <string name="peek_hint">Peek: перевіряю реальний GNSS…</string>
+    <string name="peek_hint">Проба: слухаю реальний GNSS/мережу…</string>
     <string name="gnss_silent">⚠ GNSS мовчить %1$d с при %2$d видимих супутниках — глушіння?</string>
     <string name="mock_hint">Мок активний: %1$s</string>
     <string name="since_time">з %1$s</string>
@@ -126,11 +126,11 @@
     <string name="pref_jammed_after">JAMMED після тиші GNSS, с</string>
     <string name="pref_jammed_fallback">Вести по вежах при глушінні</string>
     <string name="pref_jammed_fallback_sum">Коли GNSS не дає фіксів при видимих супутниках — віддавати мережеву позицію (заразом будить геолокацію Google)</string>
-    <string name="prefs_cat_peek">Peek — перевірка GNSS під моком</string>
-    <string name="pref_peek_interval">Інтервал peek, с</string>
-    <string name="pref_peek_interval_sum">Як часто знімати мок із gps для перевірки реального сигналу</string>
-    <string name="pref_peek_window">Вікно peek, с</string>
-    <string name="pref_peek_window_sum">Скільки чекати реальний GNSS-фікс</string>
+    <string name="prefs_cat_peek">Проба — перевірка реальності під моком</string>
+    <string name="pref_peek_interval">Інтервал проби, с</string>
+    <string name="pref_peek_interval_sum">Як часто знімати мок і слухати реальний сигнал</string>
+    <string name="pref_peek_window">Вікно проби, с</string>
+    <string name="pref_peek_window_sum">Скільки часу GNSS-рушію на повторне захоплення (довше — краще при глушінні)</string>
     <string name="prefs_cat_mock">Mock-вихід</string>
     <string name="pref_mock_fused">Мокати fused через Play Services</string>
     <string name="pref_mock_fused_sum">Підміняти позицію й для споживачів Google FLP (Google Maps). Застосовується після перезапуску сервісу</string>

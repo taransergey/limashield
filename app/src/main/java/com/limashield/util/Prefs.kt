@@ -24,8 +24,10 @@ object Prefs {
         dragMinM = sp.d("drag_min_m", 600.0),
     )
 
-    fun peekIntervalMs(sp: SharedPreferences) = (sp.d("peek_interval_s", 45.0) * 1000).toLong()
-    fun peekWindowMs(sp: SharedPreferences) = (sp.d("peek_window_s", 10.0) * 1000).toLong()
+    // Probe (ex-peek): rarer but much longer, per field experience 2026-09-11 —
+    // the GNSS engine needs real time to reacquire after the mock is released
+    fun probeIntervalMs(sp: SharedPreferences) = (sp.d("probe_interval_s", 120.0) * 1000).toLong()
+    fun probeWindowMs(sp: SharedPreferences) = (sp.d("probe_window_s", 45.0) * 1000).toLong()
     fun mockFused(sp: SharedPreferences) = sp.getBoolean("mock_fused", true)
     fun freezeInBlind(sp: SharedPreferences) = sp.getBoolean("freeze_blind", true)
     fun simulateSpoof(sp: SharedPreferences) = sp.getBoolean("simulate_spoof", false)

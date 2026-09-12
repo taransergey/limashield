@@ -29,7 +29,7 @@
     <string name="state_blind_detail">No trusted sources. Serving last good position</string>
     <string name="state_jammed_title">JAMMING — cell fallback</string>
     <string name="state_jammed_detail">GNSS is suppressed (no fixes, satellites visible). Serving network position</string>
-    <string name="peek_hint">Peek: sampling real GNSS…</string>
+    <string name="peek_hint">Probe: sampling real GNSS/network…</string>
     <string name="gnss_silent">⚠ No GNSS fixes for %1$d s while %2$d sats visible — jamming?</string>
     <string name="mock_hint">Mock active: %1$s</string>
     <string name="since_time">since %1$s</string>
@@ -130,11 +130,11 @@
     <string name="pref_jammed_after">JAMMED after GNSS silence, s</string>
     <string name="pref_jammed_fallback">Cell fallback under jamming</string>
     <string name="pref_jammed_fallback_sum">When GNSS gives no fixes while satellites are visible, serve the network position (also wakes up Google location services)</string>
-    <string name="prefs_cat_peek">Peek — GNSS sampling under mock</string>
-    <string name="pref_peek_interval">Peek interval, s</string>
-    <string name="pref_peek_interval_sum">How often to unmock gps to sample the real signal</string>
-    <string name="pref_peek_window">Peek window, s</string>
-    <string name="pref_peek_window_sum">How long to wait for a real GNSS fix</string>
+    <string name="prefs_cat_peek">Probe — sampling reality under the mock</string>
+    <string name="pref_peek_interval">Probe interval, s</string>
+    <string name="pref_peek_interval_sum">How often to release the mock and sample the real signal</string>
+    <string name="pref_peek_window">Probe window, s</string>
+    <string name="pref_peek_window_sum">How long the GNSS engine gets to reacquire (longer helps under jamming)</string>
     <string name="prefs_cat_mock">Mock output</string>
     <string name="pref_mock_fused">Mock fused via Play Services</string>
     <string name="pref_mock_fused_sum">Also override position for Google FLP consumers (Google Maps). Applied on service restart</string>
