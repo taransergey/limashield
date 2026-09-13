@@ -126,6 +126,7 @@ class LocationFilterService : Service() {
                 if (it.isEmpty()) 0.0 else it.sum() / it.size
             }
             lastSatsUpdateMs = System.currentTimeMillis()
+            noteDeliveryRestored()
             ServiceBus.update { it.copy(satsUsed = used, satsTotal = status.satelliteCount) }
         }
     }
@@ -188,6 +189,7 @@ class LocationFilterService : Service() {
         stateSince = System.currentTimeMillis()
         lastRealGnssMs = stateSince
         lastDeliveryMs = stateSince
+        lastSatsUpdateMs = stateSince
         lastState = fsm.state
         ServiceBus.update {
             it.copy(running = true, state = fsm.state, stateSinceMs = stateSince, mockMode = MockMode.OFF)
@@ -260,17 +262,20 @@ class LocationFilterService : Service() {
         runCatching { lm.unregisterGnssStatusCallback(gnssStatusCb) }
     }
 
+    private fun noteDeliveryRestored() {
+        if (deafSinceMs == 0L) return
+        EventLog.log(
+            EventLog.Level.INFO,
+            "Location delivery restored after ${(System.currentTimeMillis() - deafSinceMs) / 1000} s of deafness",
+        )
+        deafSinceMs = 0L
+        runCatching { getSystemService(NotificationManager::class.java).cancel(NOTIF_DEAF_ALERT) }
+    }
+
     /** Raw stream of both providers: to logcat (LimaShieldRaw) and the shareable field log (M5). */
     private fun logRaw(fix: Fix) {
         lastDeliveryMs = System.currentTimeMillis()
-        if (deafSinceMs != 0L) {
-            EventLog.log(
-                EventLog.Level.INFO,
-                "Location delivery restored after ${(lastDeliveryMs - deafSinceMs) / 1000} s of deafness",
-            )
-            deafSinceMs = 0L
-            runCatching { getSystemService(NotificationManager::class.java).cancel(NOTIF_DEAF_ALERT) }
-        }
+        noteDeliveryRestored()
         val line = "%d,%s,%.6f,%.6f,%.1f,%s,%s,%d,%b".format(
             Locale.US,
             System.currentTimeMillis(), fix.provider, fix.lat, fix.lon, fix.accuracyM,
@@ -315,27 +320,40 @@ class LocationFilterService : Service() {
      * user picked the phone up 10.5 h later. The filter sat in BLIND while OsmAnd
      * (holding "Allow all the time") kept receiving raw spoofed Lima fixes.
      *
-     * With the gps mock engaged and fixes being pushed, the echo stream is a
-     * deterministic canary: no callbacks at all for 45 s means delivery is dead.
-     * Response: alert the user (grant "Allow all the time") and retry re-registering
-     * the listeners — a fresh registration may punch through the vendor throttle.
+     * Two canaries, one per mock state:
+     * - mock FULL and fixes being pushed → we must hear echoes of our own 1 Hz fixes;
+     * - mock disengaged → our permanent gps request keeps the GNSS engine on, so
+     *   satellite-status callbacks (~1 Hz) must flow even with zero fixes (indoor,
+     *   jamming) — their sudden staleness caught the ride-stop cutoffs of 2026-09-13
+     *   only AFTER a fake JAMMED→BLIND had formed; now it fires in TRUSTED directly.
+     *
+     * 45 s of silence means delivery is dead. Response: alert the user (grant "Allow
+     * all the time") and re-register the listeners every 20 s — a fresh registration
+     * punches through the vendor throttle (proven in the field: 3/3 restorations).
      */
     private fun checkDeafness(now: Long) {
-        val canaryExpected = mock.mode == MockMode.FULL && mock.gpsEngaged &&
+        val echoCanary = mock.mode == MockMode.FULL && mock.gpsEngaged &&
             now - lastPushMs < 10_000
-        if (!canaryExpected) return
-        val silence = now - maxOf(lastDeliveryMs, fullSinceMs)
+        val statusCanary = !echoCanary && mock.mode == MockMode.OFF && !peekActive &&
+            runCatching { lm.isProviderEnabled(LocationManager.GPS_PROVIDER) }.getOrDefault(false)
+        val silence = when {
+            echoCanary -> now - maxOf(lastDeliveryMs, fullSinceMs)
+            statusCanary -> now - maxOf(lastSatsUpdateMs, lastDeliveryMs)
+            else -> return
+        }
         if (silence < 45_000) return
         if (deafSinceMs == 0L) {
             deafSinceMs = now
+            val canary = if (echoCanary) "no callbacks for ${silence / 1000} s while the mock emits 1 Hz"
+            else "no satellite status for ${silence / 1000} s while the GNSS engine should be on"
             EventLog.log(
                 EventLog.Level.ERROR,
-                "LOCATION DELIVERY DEAD: no callbacks for ${silence / 1000} s while the mock emits 1 Hz " +
+                "LOCATION DELIVERY DEAD: $canary " +
                     "(screen off + location permission 'only while in use'?) — re-registering listeners",
             )
             postDeafAlert()
         }
-        if (now - lastDeafRetryMs > 60_000) {
+        if (now - lastDeafRetryMs > 20_000) {
             lastDeafRetryMs = now
             unregisterListeners()
             registerListeners()

@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.8.1 — 2026-09-13
+Evening test ride confirmed v0.8.0 end to end (5/5 detections, 6 field recovery
+cycles, all three screen-off cutoffs punched through by listener re-registration),
+and showed the two remaining rough edges — both fixed:
+- **Second deafness canary for the disengaged-mock states**: with the mock off, our
+  permanent gps request keeps the GNSS engine on, so satellite-status callbacks must
+  flow even with zero fixes. Their staleness now trips the watchdog directly in
+  TRUSTED — previously a ride-stop cutoff first grew a fake JAMMED→BLIND before the
+  echo canary could see it.
+- **Faster punch-through**: listener re-registration every 20 s instead of 60 s
+  while deaf (one field episode needed a second attempt and stayed deaf 111 s).
+
 ## 0.8.0 — 2026-09-13
 Overnight experiment (11 h stationary, OsmAnd recording in parallel, jamming/spoofing
 episodes cross-checked against the local air-alert list) uncovered the worst failure
