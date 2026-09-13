@@ -13,6 +13,17 @@ object SetupStatus {
 
     fun locationGranted(ctx: Context): Boolean = hasLocationPermission(ctx)
 
+    /**
+     * "Allow all the time". With "only while in use" ColorOS cuts ALL location
+     * callbacks to the service once the screen goes off, despite the location-type
+     * foreground service (field case 2026-09-13: deaf 22:59 → 09:21 while OsmAnd,
+     * holding all-the-time access, kept receiving raw spoofed fixes).
+     */
+    fun backgroundLocationGranted(ctx: Context): Boolean =
+        Build.VERSION.SDK_INT < 29 || ctx.checkSelfPermission(
+            android.Manifest.permission.ACCESS_BACKGROUND_LOCATION
+        ) == android.content.pm.PackageManager.PERMISSION_GRANTED
+
     fun devOptionsEnabled(ctx: Context): Boolean = try {
         Settings.Global.getInt(ctx.contentResolver, Settings.Global.DEVELOPMENT_SETTINGS_ENABLED, 0) == 1
     } catch (_: Exception) {

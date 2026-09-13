@@ -76,6 +76,8 @@
     <string name="notif_channel_alerts">Important alerts</string>
     <string name="alert_mock_title">Protection is NOT active!</string>
     <string name="alert_mock_text">No mock access — the phone stays on spoofed GPS. Open the setup wizard and select LimaShield as the mock location app.</string>
+    <string name="alert_deaf_title">The system cut the filter off from location!</string>
+    <string name="alert_deaf_text">The filter receives no position data (usually after the screen turns off). Tap here and set Location permission to "Allow all the time".</string>
     <string name="killed_title">The system stopped the filter!</string>
     <string name="killed_text">Tap Start. Then allow background activity (setup step 4)</string>
     <string name="onb_step4_hint_coloros">On realme also: Settings → Battery → LimaShield → Allow background activity; and Settings → Apps → Auto-launch → enable LimaShield.</string>
@@ -95,8 +97,9 @@
     <string name="onb_title">LimaShield setup</string>
     <string name="onb_intro">For the filter to protect every app on this phone, Android requires a one-time setup. Follow the steps — the checkmarks update automatically.</string>
     <string name="onb_step1_title">1. Location access</string>
-    <string name="onb_step1_desc">The filter needs GPS and network position to detect spoofing.</string>
+    <string name="onb_step1_desc">The filter needs GPS and network position to detect spoofing. Choose "Allow all the time" — otherwise the system cuts the filter off when the screen is off.</string>
     <string name="onb_step1_btn">Grant</string>
+    <string name="onb_step1_btn_bg">Allow all the time</string>
     <string name="onb_step2_title">2. Developer mode</string>
     <string name="onb_step2_desc">Open About phone and tap “Build number” 7 times until it says you are now a developer.\n%1$s</string>
     <string name="onb_step2_btn">Open About phone</string>

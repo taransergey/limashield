@@ -37,12 +37,18 @@ class OnboardingActivity : AppCompatActivity() {
         setContentView(b.root)
 
         b.btnStep1.setOnClickListener {
-            val perms = mutableListOf(
-                Manifest.permission.ACCESS_FINE_LOCATION,
-                Manifest.permission.ACCESS_COARSE_LOCATION,
-            )
-            if (Build.VERSION.SDK_INT >= 33) perms += Manifest.permission.POST_NOTIFICATIONS
-            permLauncher.launch(perms.toTypedArray())
+            if (!SetupStatus.locationGranted(this)) {
+                val perms = mutableListOf(
+                    Manifest.permission.ACCESS_FINE_LOCATION,
+                    Manifest.permission.ACCESS_COARSE_LOCATION,
+                )
+                if (Build.VERSION.SDK_INT >= 33) perms += Manifest.permission.POST_NOTIFICATIONS
+                permLauncher.launch(perms.toTypedArray())
+            } else if (Build.VERSION.SDK_INT >= 29) {
+                // Second phase: "Allow all the time". Must be requested separately from
+                // fine location; on Android 11+ the system opens the settings screen.
+                permLauncher.launch(arrayOf(Manifest.permission.ACCESS_BACKGROUND_LOCATION))
+            }
         }
 
         b.btnStep2.setOnClickListener { openAboutPhone() }
@@ -66,12 +72,16 @@ class OnboardingActivity : AppCompatActivity() {
     }
 
     private fun refresh() {
-        val loc = SetupStatus.locationGranted(this)
+        val loc = SetupStatus.locationGranted(this) && SetupStatus.backgroundLocationGranted(this)
         val mock = SetupStatus.mockAllowed(this)
         val dev = SetupStatus.devOptionsEnabled(this) || mock
         val bat = SetupStatus.batteryExempt(this)
 
         setCard(b.cardStep1, b.statusStep1, b.btnStep1, loc)
+        b.btnStep1.setText(
+            if (SetupStatus.locationGranted(this) && !loc) R.string.onb_step1_btn_bg
+            else R.string.onb_step1_btn
+        )
         setCard(b.cardStep2, b.statusStep2, b.btnStep2, dev)
         setCard(b.cardStep3, b.statusStep3, b.btnStep3, mock)
         setCard(b.cardStep4, b.statusStep4, b.btnStep4, bat)

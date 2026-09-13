@@ -1,5 +1,34 @@
 # Changelog
 
+## 0.8.0 — 2026-09-13
+Overnight experiment (11 h stationary, OsmAnd recording in parallel, jamming/spoofing
+episodes cross-checked against the local air-alert list) uncovered the worst failure
+mode so far: the moment the screen went off, ColorOS stopped delivering ALL location
+callbacks to the filter — even echoes of its own 1 Hz mock fixes — and resumed only
+when the phone was picked up 10.5 hours later. The filter sat silently in BLIND while
+OsmAnd, which holds "Allow all the time", kept receiving raw spoofed Lima fixes
+(517 track points at ~200 km/h in Peru).
+- **Background location permission**: the app now requests "Allow all the time"
+  (`ACCESS_BACKGROUND_LOCATION`); setup wizard step 1 walks through both phases.
+- **Deafness watchdog**: with the gps mock engaged the filter must hear echoes of its
+  own 1 Hz fixes — 45 s of total silence now raises an alert notification (deep link
+  to the permission screen), logs the outage, and re-registers all listeners every
+  60 s until delivery resumes. A silent 10-hour failure is now a 45-second loud one.
+
+## 0.7.2 — 2026-09-12
+- Network silence (the SPOOFED/JAMMED → BLIND countdown) is now measured by fix
+  *receive* time: a stationary phone legitimately receives cached network duplicates
+  carrying an old fix timestamp, which caused BLIND flapping every ~40 s.
+
+## 0.7.1 — 2026-09-12
+- Longer uninterrupted probe windows (escalating up to 4× on consecutive failures,
+  reset by any real fix): short choppy windows never let the GNSS chip finish
+  acquisition, so the filter saw only "silence" and could not classify the threat.
+  Live result: with a 3-minute window the chip locked the spoofed signal and the
+  filter flagged SPOOFED instantly (11 ms).
+- Satellite telemetry no longer logs frozen snapshots while the mock keeps the real
+  GNSS engine off (they poisoned later C/N0 analysis).
+
 ## 0.7.0 — 2026-09-12
 Fixes from the 2026-09-11 test ride (BLIND for 20-30 min stretches, OsmAnd frozen,
 network fixes once per 20-30 minutes, a fair FALSE_ALARM marker from the rider):

@@ -72,6 +72,8 @@
     <string name="notif_channel_alerts">Важливі сповіщення</string>
     <string name="alert_mock_title">Захист НЕ активний!</string>
     <string name="alert_mock_text">Немає mock-доступу — телефон залишився на підробленому GPS. Відкрийте майстер налаштування та призначте LimaShield застосунком для фіктивних місцезнаходжень.</string>
+    <string name="alert_deaf_title">Система відрізала фільтр від геолокації!</string>
+    <string name="alert_deaf_text">Фільтр не отримує позицію (зазвичай після вимкнення екрана). Натисніть сюди та виберіть для геолокації «Дозволяти завжди».</string>
     <string name="killed_title">Система зупинила фільтр!</string>
     <string name="killed_text">Натисніть «Запустити». Потім дозвольте фонову активність (крок 4 майстра)</string>
     <string name="onb_step4_hint_coloros">На realme додатково: Налаштування → Батарея → LimaShield → «Дозволити фонову активність»; і Налаштування → Застосунки → Автозапуск → увімкнути LimaShield.</string>
@@ -91,8 +93,9 @@
     <string name="onb_title">Налаштування LimaShield</string>
     <string name="onb_intro">Щоб фільтр захищав усі застосунки телефона, Android вимагає одноразове налаштування. Ідіть за кроками — галочки оновлюються самі.</string>
     <string name="onb_step1_title">1. Доступ до геолокації</string>
-    <string name="onb_step1_desc">Фільтру потрібні GPS і мережева позиція, щоб виявляти спуфінг.</string>
+    <string name="onb_step1_desc">Фільтру потрібні GPS і мережева позиція, щоб виявляти спуфінг. Виберіть «Дозволяти завжди» — інакше система відріже фільтр від локації, коли екран вимкнено.</string>
     <string name="onb_step1_btn">Надати</string>
+    <string name="onb_step1_btn_bg">Дозволяти завжди</string>
     <string name="onb_step2_title">2. Режим розробника</string>
     <string name="onb_step2_desc">Відкрийте «Про телефон» і натисніть 7 разів на «Номер збірки», доки не з\'явиться повідомлення, що ви розробник.\n%1$s</string>
     <string name="onb_step2_btn">Відкрити «Про телефон»</string>

@@ -88,6 +88,10 @@ class LocationFilterService : Service() {
     private var mockAlertActive = false
     private var probeFailCount = 0
     private var lastSatsUpdateMs = 0L
+    private var lastDeliveryMs = 0L // any location callback, echoes of our own mock included
+    private var lastPushMs = 0L
+    private var deafSinceMs = 0L
+    private var lastDeafRetryMs = 0L
 
     private val gpsListener = object : LocationListener {
         override fun onLocationChanged(location: Location) = onGnssLocation(location)
@@ -177,27 +181,13 @@ class LocationFilterService : Service() {
         mock = MockOutput(this, Prefs.mockFused(sp))
         mock.cleanupRemnants()
 
-        try {
-            // Raw providers directly, intervals per spec §3.1
-            lm.requestLocationUpdates(LocationManager.GPS_PROVIDER, 1000L, 0f, gpsListener, mainLooper)
-        } catch (e: Exception) {
-            EventLog.log(EventLog.Level.ERROR, "GPS subscription failed: ${e.message}")
-        }
-        try {
-            lm.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 5000L, 0f, netListener, mainLooper)
-        } catch (e: Exception) {
-            EventLog.log(EventLog.Level.WARN, "Network provider unavailable: ${e.message}")
-        }
-        try {
-            @Suppress("DEPRECATION")
-            lm.registerGnssStatusCallback(gnssStatusCb, Handler(mainLooper))
-        } catch (_: Exception) {
-        }
+        registerListeners()
 
         FieldRecorder.enabled = Prefs.fieldRecording(sp)
         sp.registerOnSharedPreferenceChangeListener(prefListener)
         stateSince = System.currentTimeMillis()
         lastRealGnssMs = stateSince
+        lastDeliveryMs = stateSince
         lastState = fsm.state
         ServiceBus.update {
             it.copy(running = true, state = fsm.state, stateSinceMs = stateSince, mockMode = MockMode.OFF)
@@ -244,8 +234,43 @@ class LocationFilterService : Service() {
         applyResult(fsm.onNetwork(fix, System.currentTimeMillis()), fromGnss = false)
     }
 
+    @SuppressLint("MissingPermission")
+    private fun registerListeners() {
+        try {
+            // Raw providers directly, intervals per spec §3.1
+            lm.requestLocationUpdates(LocationManager.GPS_PROVIDER, 1000L, 0f, gpsListener, mainLooper)
+        } catch (e: Exception) {
+            EventLog.log(EventLog.Level.ERROR, "GPS subscription failed: ${e.message}")
+        }
+        try {
+            lm.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 5000L, 0f, netListener, mainLooper)
+        } catch (e: Exception) {
+            EventLog.log(EventLog.Level.WARN, "Network provider unavailable: ${e.message}")
+        }
+        try {
+            @Suppress("DEPRECATION")
+            lm.registerGnssStatusCallback(gnssStatusCb, Handler(mainLooper))
+        } catch (_: Exception) {
+        }
+    }
+
+    private fun unregisterListeners() {
+        runCatching { lm.removeUpdates(gpsListener) }
+        runCatching { lm.removeUpdates(netListener) }
+        runCatching { lm.unregisterGnssStatusCallback(gnssStatusCb) }
+    }
+
     /** Raw stream of both providers: to logcat (LimaShieldRaw) and the shareable field log (M5). */
     private fun logRaw(fix: Fix) {
+        lastDeliveryMs = System.currentTimeMillis()
+        if (deafSinceMs != 0L) {
+            EventLog.log(
+                EventLog.Level.INFO,
+                "Location delivery restored after ${(lastDeliveryMs - deafSinceMs) / 1000} s of deafness",
+            )
+            deafSinceMs = 0L
+            runCatching { getSystemService(NotificationManager::class.java).cancel(NOTIF_DEAF_ALERT) }
+        }
         val line = "%d,%s,%.6f,%.6f,%.1f,%s,%s,%d,%b".format(
             Locale.US,
             System.currentTimeMillis(), fix.provider, fix.lat, fix.lon, fix.accuracyM,
@@ -279,7 +304,62 @@ class LocationFilterService : Service() {
         schedulePeek(now)
         checkGnssSilence(now)
         checkMockHealth(now)
+        checkDeafness(now)
         logTelemetry(now)
+    }
+
+    /**
+     * Watchdog against a silent location cutoff. Field case 2026-09-12/13: the moment
+     * the screen went off, ColorOS stopped delivering ALL location callbacks to this
+     * process — even echoes of our own 1 Hz mock fixes — and resumed only when the
+     * user picked the phone up 10.5 h later. The filter sat in BLIND while OsmAnd
+     * (holding "Allow all the time") kept receiving raw spoofed Lima fixes.
+     *
+     * With the gps mock engaged and fixes being pushed, the echo stream is a
+     * deterministic canary: no callbacks at all for 45 s means delivery is dead.
+     * Response: alert the user (grant "Allow all the time") and retry re-registering
+     * the listeners — a fresh registration may punch through the vendor throttle.
+     */
+    private fun checkDeafness(now: Long) {
+        val canaryExpected = mock.mode == MockMode.FULL && mock.gpsEngaged &&
+            now - lastPushMs < 10_000
+        if (!canaryExpected) return
+        val silence = now - maxOf(lastDeliveryMs, fullSinceMs)
+        if (silence < 45_000) return
+        if (deafSinceMs == 0L) {
+            deafSinceMs = now
+            EventLog.log(
+                EventLog.Level.ERROR,
+                "LOCATION DELIVERY DEAD: no callbacks for ${silence / 1000} s while the mock emits 1 Hz " +
+                    "(screen off + location permission 'only while in use'?) — re-registering listeners",
+            )
+            postDeafAlert()
+        }
+        if (now - lastDeafRetryMs > 60_000) {
+            lastDeafRetryMs = now
+            unregisterListeners()
+            registerListeners()
+        }
+    }
+
+    private fun postDeafAlert() {
+        val settingsPi = PendingIntent.getActivity(
+            this, 15,
+            Intent(
+                android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                android.net.Uri.parse("package:$packageName"),
+            ),
+            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
+        )
+        val notif = NotificationCompat.Builder(this, App.CHANNEL_ALERTS)
+            .setSmallIcon(R.drawable.ic_shield)
+            .setContentTitle(getString(R.string.alert_deaf_title))
+            .setContentText(getString(R.string.alert_deaf_text))
+            .setStyle(NotificationCompat.BigTextStyle().bigText(getString(R.string.alert_deaf_text)))
+            .setContentIntent(settingsPi)
+            .setAutoCancel(true)
+            .build()
+        runCatching { getSystemService(NotificationManager::class.java).notify(NOTIF_DEAF_ALERT, notif) }
     }
 
     /**
@@ -419,6 +499,7 @@ class LocationFilterService : Service() {
         val emit = r.emit
         if (emit != null && !(r.state == FilterState.BLIND && !Prefs.freezeInBlind(sp))) {
             mock.push(emit)
+            lastPushMs = System.currentTimeMillis()
         }
 
         if (r.state != lastState) {
@@ -524,9 +605,7 @@ class LocationFilterService : Service() {
         isRunning = false
         scope.cancel()
         if (started) {
-            runCatching { lm.removeUpdates(gpsListener) }
-            runCatching { lm.removeUpdates(netListener) }
-            runCatching { lm.unregisterGnssStatusCallback(gnssStatusCb) }
+            unregisterListeners()
             runCatching { sp.unregisterOnSharedPreferenceChangeListener(prefListener) }
             if (::mock.isInitialized) mock.apply(MockMode.OFF)
         }
@@ -576,6 +655,7 @@ class LocationFilterService : Service() {
         const val ACTION_MARK_OK = "com.limashield.action.MARK_OK"
         private const val NOTIF_ID = 1
         private const val NOTIF_MOCK_ALERT = 4
+        private const val NOTIF_DEAF_ALERT = 5
 
         @Volatile
         var isRunning = false
