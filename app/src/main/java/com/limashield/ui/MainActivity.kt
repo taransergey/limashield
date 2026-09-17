@@ -290,6 +290,10 @@ class MainActivity : AppCompatActivity() {
                 ui.gnssSilentSec?.let { s ->
                     append("\n").append(getString(R.string.gnss_silent, s, ui.satsTotal))
                 }
+                ui.drAgeSec?.let { age ->
+                    append("\n").append(getString(R.string.dr_status, age, ui.drAccM ?: 0f))
+                    if (ui.drDegraded) append(" ").append(getString(R.string.dr_degraded))
+                }
             }
         }
         b.cardStatus.setCardBackgroundColor(color)

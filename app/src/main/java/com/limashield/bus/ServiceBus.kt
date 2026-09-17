@@ -25,6 +25,10 @@ object ServiceBus {
         val lastVerdict: String? = null,
         /** Seconds without GNSS fixes while satellites are visible (suspected jamming); null — all good. */
         val gnssSilentSec: Long? = null,
+        /** Dead reckoning: extrapolation age in seconds and claimed accuracy; null — DR not driving the output. */
+        val drAgeSec: Long? = null,
+        val drAccM: Float? = null,
+        val drDegraded: Boolean = false,
     )
 
     val ui = MutableStateFlow(Ui())

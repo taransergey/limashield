@@ -27,6 +27,8 @@
     <string name="state_jammed_detail">GNSS подавлен (фиксов нет, спутники видны). Наружу идёт сетевая позиция</string>
     <string name="peek_hint">Проба: слушаю реальный GNSS/сеть…</string>
     <string name="gnss_silent">⚠ GNSS молчит %1$d с при %2$d видимых спутниках — глушение?</string>
+    <string name="dr_status">Экстраполяция: %1$d с от опоры, ±%2$.0f м</string>
+    <string name="dr_degraded">(заморожено)</string>
     <string name="mock_hint">Мок активен: %1$s</string>
     <string name="since_time">с %1$s</string>
 
@@ -135,6 +137,13 @@
     <string name="pref_peek_window">Окно пробы, с</string>
     <string name="pref_peek_window_sum">Сколько времени GNSS-движку на повторный захват (дольше — лучше при глушении)</string>
     <string name="prefs_cat_mock">Mock-выход</string>
+    <string name="prefs_cat_dr">Счисление пути</string>
+    <string name="pref_dr_enabled">Счисление пути</string>
+    <string name="pref_dr_enabled_sum">Экстраполировать движение по гироскопу между редкими сетевыми фиксами. Выкл = повтор последнего фикса (поведение v0.8).</string>
+    <string name="pref_dr_horizon">Горизонт, с</string>
+    <string name="pref_dr_horizon_sum">Заморозить маркер после такого времени без опорного фикса</string>
+    <string name="pref_dr_freeze">Точность заморозки, м</string>
+    <string name="pref_dr_freeze_sum">Заморозить маркер, когда заявленная точность вырастет выше порога</string>
     <string name="pref_mock_fused">Мокать fused через Play Services</string>
     <string name="pref_mock_fused_sum">Подменять позицию и для потребителей Google FLP (Google Maps). Применяется при перезапуске сервиса</string>
     <string name="pref_freeze">Замораживать позицию в BLIND</string>

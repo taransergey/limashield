@@ -32,6 +32,7 @@ import com.limashield.core.Fix
 import com.limashield.core.FsmResult
 import com.limashield.core.MockMode
 import com.limashield.core.Thresholds
+import com.limashield.core.dr.DeadReckoningEngine
 import com.limashield.debug.SpoofSimulator
 import com.limashield.log.EventLog
 import com.limashield.log.FieldMarker
@@ -68,6 +69,9 @@ class LocationFilterService : Service() {
     private lateinit var sp: SharedPreferences
     private lateinit var mock: MockOutput
     private var fsm = FilterFsm(Thresholds())
+    private var dr = DeadReckoningEngine(Thresholds())
+    private var sensors: SensorAdapter? = null
+    private var wakeLock: android.os.PowerManager.WakeLock? = null
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
     private var started = false
 
@@ -92,6 +96,9 @@ class LocationFilterService : Service() {
     private var lastPushMs = 0L
     private var deafSinceMs = 0L
     private var lastDeafRetryMs = 0L
+    private var imuDeafSinceMs = 0L
+    private var lastImuRetryMs = 0L
+    private var lastDrEventLogged: String? = null
 
     private val gpsListener = object : LocationListener {
         override fun onLocationChanged(location: Location) = onGnssLocation(location)
@@ -134,6 +141,7 @@ class LocationFilterService : Service() {
     private val prefListener = SharedPreferences.OnSharedPreferenceChangeListener { prefs, key ->
         if (key in Prefs.THRESHOLD_KEYS) {
             fsm = FilterFsm(Prefs.thresholds(prefs))
+            dr = DeadReckoningEngine(Prefs.thresholds(prefs))
             EventLog.log(EventLog.Level.INFO, "Thresholds updated — FSM reset to TRUSTED")
         }
         if (key == "field_recording") {
@@ -179,6 +187,8 @@ class LocationFilterService : Service() {
         lm = getSystemService(LocationManager::class.java)
         sp = PreferenceManager.getDefaultSharedPreferences(this)
         fsm = FilterFsm(Prefs.thresholds(sp))
+        dr = DeadReckoningEngine(Prefs.thresholds(sp))
+        sensors = SensorAdapter(this, Handler(mainLooper)) { s -> dr.onImu(s) }
         mock = MockOutput(this, Prefs.mockFused(sp))
         mock.cleanupRemnants()
 
@@ -196,6 +206,9 @@ class LocationFilterService : Service() {
         }
         FilterTileService.requestUpdate(this)
         EventLog.log(EventLog.Level.INFO, "Service started (Android ${Build.VERSION.RELEASE})")
+        if (Prefs.drEnabled(sp) && sensors?.hasGyro != true) {
+            EventLog.log(EventLog.Level.WARN, "No gyroscope on this device — dead reckoning unavailable, falling back to fix-repeat")
+        }
 
         scope.launch {
             while (isActive) {
@@ -310,6 +323,7 @@ class LocationFilterService : Service() {
         checkGnssSilence(now)
         checkMockHealth(now)
         checkDeafness(now)
+        checkImuHealth(now)
         logTelemetry(now)
     }
 
@@ -514,10 +528,40 @@ class LocationFilterService : Service() {
             fullSinceMs = System.currentTimeMillis()
         }
 
+        val nowMs = System.currentTimeMillis()
+        val drOn = Prefs.drEnabled(sp) && r.state != FilterState.TRUSTED && sensors?.hasGyro == true
+        syncDrSensors(r.state, drOn)
+
+        val suppressBlind = r.state == FilterState.BLIND && !Prefs.freezeInBlind(sp)
         val emit = r.emit
-        if (emit != null && !(r.state == FilterState.BLIND && !Prefs.freezeInBlind(sp))) {
-            mock.push(emit)
-            lastPushMs = System.currentTimeMillis()
+        var pushed: Fix? = null
+        if (drOn) {
+            // The FSM's emit becomes a CORRECTION for dead reckoning; the engine
+            // dedupes the per-tick repeats itself. BLIND's emit is the FSM's own
+            // frozen construct, not a reference — never feed it to the EKF.
+            if (emit != null && r.state != FilterState.BLIND) dr.update(emit, nowMs)
+            val pred = if (suppressBlind) null else dr.predict(nowMs)
+            if (pred != null) {
+                pushed = pred.fix
+                ServiceBus.update {
+                    it.copy(drAgeSec = pred.extrapolationAgeSec, drAccM = pred.fix.accuracyM, drDegraded = pred.degraded)
+                }
+                dr.lastEvent?.let { evd ->
+                    if (evd != lastDrEventLogged) {
+                        lastDrEventLogged = evd
+                        EventLog.log(EventLog.Level.INFO, "DR: $evd")
+                    }
+                }
+            } else if (emit != null && !suppressBlind) {
+                pushed = emit // engine has no reference yet — plain v0.8 behavior
+            }
+        } else {
+            if (emit != null && !suppressBlind) pushed = emit
+            ServiceBus.update { it.copy(drAgeSec = null, drAccM = null, drDegraded = false) }
+        }
+        if (pushed != null) {
+            mock.push(pushed)
+            lastPushMs = nowMs
         }
 
         if (r.state != lastState) {
@@ -535,6 +579,77 @@ class LocationFilterService : Service() {
                 passthrough = passthroughCapable,
                 simulating = simulator != null,
             )
+        }
+    }
+
+    /**
+     * IMU sensors and the CPU wakelock live only in the hostile states (DR spec §5.1,
+     * §5.4): battery budget, and TRUSTED needs neither. Leaving to TRUSTED resets the
+     * engine — the next hostile episode re-seeds from a fresh trusted fix.
+     */
+    private fun syncDrSensors(state: FilterState, drOn: Boolean) {
+        val s = sensors ?: return
+        if (drOn) {
+            if (!s.running) {
+                s.start()
+                acquireWakeLock()
+                EventLog.log(EventLog.Level.INFO, "DR: IMU sensors on")
+            }
+        } else {
+            if (s.running) {
+                s.stop()
+                releaseWakeLock()
+                imuDeafSinceMs = 0L
+                EventLog.log(EventLog.Level.INFO, "DR: IMU sensors off")
+            }
+            if (state == FilterState.TRUSTED && dr.seeded) dr.reset()
+        }
+    }
+
+    private fun acquireWakeLock() {
+        if (wakeLock?.isHeld == true) return
+        runCatching {
+            val pm = getSystemService(android.os.PowerManager::class.java)
+            wakeLock = pm.newWakeLock(android.os.PowerManager.PARTIAL_WAKE_LOCK, "limashield:dr").apply {
+                setReferenceCounted(false)
+                acquire()
+            }
+        }
+    }
+
+    private fun releaseWakeLock() {
+        runCatching { wakeLock?.let { if (it.isHeld) it.release() } }
+    }
+
+    /**
+     * IMU watchdog (DR spec §5.4): sensors are registered but no events arrive —
+     * the same class of vendor screen-off throttling as the location cutoff.
+     * Same response: loud log + alert, re-register every 20 s. DR itself keeps
+     * coasting on the model and honestly degrades toward the freeze.
+     */
+    private fun checkImuHealth(now: Long) {
+        val s = sensors ?: return
+        if (!s.running) return
+        val silence = s.silenceMs(now)
+        if (silence < 10_000) {
+            if (imuDeafSinceMs != 0L) {
+                EventLog.log(EventLog.Level.INFO, "IMU stream restored after ${(now - imuDeafSinceMs) / 1000} s")
+                imuDeafSinceMs = 0L
+            }
+            return
+        }
+        if (imuDeafSinceMs == 0L) {
+            imuDeafSinceMs = now
+            EventLog.log(
+                EventLog.Level.ERROR,
+                "IMU SILENT for ${silence / 1000} s while sensors are registered — re-registering; DR degrades honestly",
+            )
+            postDeafAlert()
+        }
+        if (now - lastImuRetryMs > 20_000) {
+            lastImuRetryMs = now
+            s.stop()
+            s.start()
         }
     }
 
@@ -622,6 +737,8 @@ class LocationFilterService : Service() {
     override fun onDestroy() {
         isRunning = false
         scope.cancel()
+        sensors?.stop()
+        releaseWakeLock()
         if (started) {
             unregisterListeners()
             runCatching { sp.unregisterOnSharedPreferenceChangeListener(prefListener) }

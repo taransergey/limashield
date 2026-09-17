@@ -37,6 +37,10 @@ object FieldRecorder {
     private var rawDay = ""
     private var rawCount = 0
 
+    private var imuWriter: BufferedWriter? = null
+    private var imuDay = ""
+    private var imuCount = 0
+
     private val io = Executors.newSingleThreadExecutor { r ->
         Thread(r, "field-recorder").apply {
             isDaemon = true
@@ -60,8 +64,19 @@ object FieldRecorder {
         io.execute { writeRaw(line) }
     }
 
+    /** Aggregated 10 Hz IMU stream (DR spec §7.1): elapsedNanos,epochMs,type,v1[,v2,v3]. */
+    fun imu(line: String) {
+        if (!enabled) return
+        io.execute { writeImu(line) }
+    }
+
     fun flush() {
-        io.execute { synchronized(this) { runCatching { rawWriter?.flush() } } }
+        io.execute {
+            synchronized(this) {
+                runCatching { rawWriter?.flush() }
+                runCatching { imuWriter?.flush() }
+            }
+        }
     }
 
     /** Crash report — synchronous and unconditional, regardless of enabled. */
@@ -115,8 +130,25 @@ object FieldRecorder {
     }
 
     @Synchronized
+    private fun writeImu(line: String) {
+        val d = dir ?: return
+        runCatching {
+            val day = dayFmt.format(Date())
+            if (day != imuDay || imuWriter == null) {
+                imuWriter?.close()
+                imuWriter = BufferedWriter(FileWriter(File(d, "imu-$day.csv"), true))
+                imuDay = day
+            }
+            imuWriter!!.write(line)
+            imuWriter!!.newLine()
+            if (++imuCount % 100 == 0) imuWriter!!.flush()
+        }
+    }
+
+    @Synchronized
     private fun doZip(target: File, extra: List<File>): Boolean {
         runCatching { rawWriter?.flush() }
+        runCatching { imuWriter?.flush() }
         val all = files() + extra.filter { it.isFile && it.length() > 0 }
         if (all.isEmpty()) return false
         runCatching {

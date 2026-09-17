@@ -9,6 +9,7 @@ object Prefs {
     val THRESHOLD_KEYS = setOf(
         "divergence_km", "teleport_km", "max_speed_kmh",
         "recovery_s", "blind_after_s", "blind_recover_km", "drag_min_m",
+        "dr_horizon_s", "dr_freeze_m",
     )
 
     private fun SharedPreferences.d(key: String, def: Double): Double =
@@ -22,7 +23,12 @@ object Prefs {
         blindAfterNoNetMs = (sp.d("blind_after_s", 30.0) * 1000).toLong(),
         blindRecoverM = sp.d("blind_recover_km", 5.0) * 1000,
         dragMinM = sp.d("drag_min_m", 600.0),
+        drMaxExtrapolationMs = (sp.d("dr_horizon_s", 120.0) * 1000).toLong(),
+        drFreezeAccuracyM = sp.d("dr_freeze_m", 500.0),
     )
+
+    /** Dead reckoning master switch: off = the plain repeat-last-fix behavior of v0.8. */
+    fun drEnabled(sp: SharedPreferences) = sp.getBoolean("dr_enabled", true)
 
     // Probe (ex-peek): rarer but much longer, per field experience 2026-09-11 —
     // the GNSS engine needs real time to reacquire after the mock is released

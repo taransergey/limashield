@@ -55,4 +55,20 @@ data class Thresholds(
     val gnssGapAbortMs: Long = 10_000,        // GNSS gap during RECOVERING → back to SPOOFED
     val blindAccuracyGrowMps: Float = 10f,
     val blindAccuracyCapM: Float = 5_000f,
+
+    // Dead reckoning (DR spec §4): EKF-CTRV between sparse reference fixes.
+    val drQAccelMps2: Double = 2.0,         // process noise: linear acceleration std (a motorcycle maneuvers hard)
+    val drQYawAccelRadS2: Double = 0.4,     // process noise: yaw acceleration std
+    val drGyroRRadS: Double = 0.02,         // gyro yaw-rate measurement std
+    val drYawRRad: Double = 0.35,           // world-yaw (ROTATION_VECTOR) std, ~20° — a weak anchor
+    val drSpeedRMps: Double = 1.0,          // fix-carried speed measurement std
+    val drNetAccFactor: Double = 1.5,       // network fix accuracy is systematically optimistic
+    val drGateSigma: Double = 3.0,          // robust position gate (innovation vs predicted σ)
+    val drFreezeAccuracyM: Double = 500.0,  // degraded: stop the marker, grow accuracy
+    val drMaxExtrapolationMs: Long = 120_000,
+    // Honest floor on claimed accuracy: white-noise Q cannot cover a SUSTAINED
+    // unobserved maneuver (constant acceleration between rare fixes), so the claim
+    // must grow at least this fast with extrapolation age.
+    val drAccFloorMps: Double = 2.0,
+    val drZuptAccVar: Double = 0.3,         // accel variance (m/s²)² below which we are stationary
 )

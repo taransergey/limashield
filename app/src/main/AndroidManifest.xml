@@ -9,6 +9,9 @@
          filter was deaf for 10 h while OsmAnd kept receiving raw spoofed fixes) -->
     <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <!-- DR spec §5.4: partial wakelock while dead reckoning is active — vendor
+         screen-off throttling must not stop the IMU/EKF between rare fixes -->
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />

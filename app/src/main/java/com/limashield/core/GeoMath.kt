@@ -40,6 +40,26 @@ object GeoMath {
         return d
     }
 
+    /**
+     * Local metric ENU plane (meters) anchored at (lat0, lon0) — equirectangular,
+     * good to centimeters at the re-anchoring distances DR works with (<10 km).
+     * Returns (east, north).
+     */
+    fun toLocalM(lat0: Double, lon0: Double, lat: Double, lon: Double): Pair<Double, Double> {
+        val north = (lat - lat0) * M_PER_DEG
+        val east = (lon - lon0) * M_PER_DEG * cos(Math.toRadians(lat0))
+        return east to north
+    }
+
+    /** Inverse of [toLocalM]: (east, north) meters from the anchor back to WGS84. */
+    fun fromLocalM(lat0: Double, lon0: Double, east: Double, north: Double): Pair<Double, Double> {
+        val lat = lat0 + north / M_PER_DEG
+        val lon = lon0 + east / (M_PER_DEG * cos(Math.toRadians(lat0)))
+        return lat to lon
+    }
+
+    private const val M_PER_DEG = 111_320.0
+
     fun mean(xs: List<Double>): Double = xs.sum() / xs.size
 
     fun stdDev(xs: List<Double>): Double {

@@ -65,6 +65,24 @@
             app:defaultValue="45" />
     </PreferenceCategory>
 
+    <PreferenceCategory app:title="@string/prefs_cat_dr">
+        <SwitchPreferenceCompat
+            app:key="dr_enabled"
+            app:title="@string/pref_dr_enabled"
+            app:summary="@string/pref_dr_enabled_sum"
+            app:defaultValue="true" />
+        <EditTextPreference
+            app:key="dr_horizon_s"
+            app:title="@string/pref_dr_horizon"
+            app:summary="@string/pref_dr_horizon_sum"
+            app:defaultValue="120" />
+        <EditTextPreference
+            app:key="dr_freeze_m"
+            app:title="@string/pref_dr_freeze"
+            app:summary="@string/pref_dr_freeze_sum"
+            app:defaultValue="500" />
+    </PreferenceCategory>
+
     <PreferenceCategory app:title="@string/prefs_cat_mock">
         <SwitchPreferenceCompat
             app:key="mock_fused"

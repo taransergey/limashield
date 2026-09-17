@@ -31,6 +31,8 @@
     <string name="state_jammed_detail">GNSS is suppressed (no fixes, satellites visible). Serving network position</string>
     <string name="peek_hint">Probe: sampling real GNSS/network…</string>
     <string name="gnss_silent">⚠ No GNSS fixes for %1$d s while %2$d sats visible — jamming?</string>
+    <string name="dr_status">Dead reckoning: %1$d s since last fix, ±%2$.0f m</string>
+    <string name="dr_degraded">(frozen)</string>
     <string name="mock_hint">Mock active: %1$s</string>
     <string name="since_time">since %1$s</string>
 
@@ -139,6 +141,13 @@
     <string name="pref_peek_window">Probe window, s</string>
     <string name="pref_peek_window_sum">How long the GNSS engine gets to reacquire (longer helps under jamming)</string>
     <string name="prefs_cat_mock">Mock output</string>
+    <string name="prefs_cat_dr">Dead reckoning</string>
+    <string name="pref_dr_enabled">Dead reckoning</string>
+    <string name="pref_dr_enabled_sum">Extrapolate motion from the gyroscope between rare network fixes. Off = repeat the last fix (v0.8 behavior).</string>
+    <string name="pref_dr_horizon">Horizon, s</string>
+    <string name="pref_dr_horizon_sum">Freeze the marker after this long without a reference fix</string>
+    <string name="pref_dr_freeze">Freeze accuracy, m</string>
+    <string name="pref_dr_freeze_sum">Freeze the marker once the claimed accuracy grows past this</string>
     <string name="pref_mock_fused">Mock fused via Play Services</string>
     <string name="pref_mock_fused_sum">Also override position for Google FLP consumers (Google Maps). Applied on service restart</string>
     <string name="pref_freeze">Freeze position in BLIND</string>

@@ -1,5 +1,28 @@
 # Changelog
 
+## 0.9.0 — 2026-09-17
+**Dead reckoning** (new DR spec, rev 2): under jamming the network gives a fix once
+per 20-30 minutes and the marker used to sit still between them. Now an EKF-CTRV
+engine extrapolates motion between rare reference fixes using the gyroscope — the
+one sensor EW cannot spoof — and fills the 1 Hz mock stream with distinct, plausible
+positions carrying honestly growing accuracy.
+- Pure-JVM core (`core/dr/`): 5-state EKF over the CTRV model, gyro yaw rate as the
+  main measurement, ROTATION_VECTOR as a weak world-heading anchor (magnetometer
+  gated to 25-65 µT — motorcycle electrics), ZUPT stop detector (marker freezes ≤3 s
+  after a stop), robust position gate with cell re-bind relocation, honest
+  degradation to a frozen marker past the horizon (120 s / ±500 m, configurable).
+- `SensorAdapter`: ~50 Hz sensors aggregated to 10 Hz, gyro projected onto the world
+  vertical through the 3D orientation (arbitrary mount, lean angle); IMU stream
+  recorded to `imu-<day>.csv` next to the raw fix log.
+- Integration downstream of the untouched FSM: its emit becomes the DR correction;
+  the mock channel, probe windows and watchdogs are unchanged. IMU gets its own
+  silence watchdog (10 s) with the same alert + re-register response. Partial
+  wakelock while DR is active. Master switch in settings (off = v0.8 behavior).
+- Replay bench over real field recordings (thin the trusted fixes, hidden ones are
+  the reference): on the 2026-09-13 evening ride, gyro-grade heading cuts the median
+  extrapolation error ~4× vs pure kinematics (297 m → 79 m at 30 s masking on
+  network-quality references; 52 m on GPS-quality ones).
+
 ## 0.8.1 — 2026-09-13
 Evening test ride confirmed v0.8.0 end to end (5/5 detections, 6 field recovery
 cycles, all three screen-off cutoffs punched through by listener re-registration),

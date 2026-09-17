@@ -13,8 +13,8 @@ android {
         applicationId = "com.limashield"
         minSdk = 26
         targetSdk = 36
-        versionCode = 14
-        versionName = "0.8.1"
+        versionCode = 15
+        versionName = "0.9.0"
     }
 
     buildTypes {
@@ -31,6 +31,17 @@ android {
 
     buildFeatures {
         viewBinding = true
+    }
+
+    testOptions {
+        unitTests.all {
+            // Replay bench (DR spec §7.2): local directory of raw-*.csv field
+            // recordings — real coordinates, never committed, passed per-run.
+            it.systemProperty(
+                "limashield.replay.dir",
+                (project.findProperty("limashield.replay.dir") as String?) ?: "",
+            )
+        }
     }
 
     lint {
