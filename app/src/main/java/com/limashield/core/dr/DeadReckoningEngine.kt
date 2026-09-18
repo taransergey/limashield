@@ -83,7 +83,9 @@ class DeadReckoningEngine(private val t: Thresholds) {
         anchorLon = fix.lon
         val v0 = fix.speedMps?.toDouble() ?: 0.0
         val psi0 = Math.toRadians((fix.bearingDeg ?: 0f).toDouble())
-        val vVar = if (fix.speedMps != null) 4.0 else 25.0
+        // A speedless (network) seed may catch the bike at full riding speed: a tight
+        // prior turns genuine motion into "outliers" (2026-09-18: gate/relocate churn)
+        val vVar = if (fix.speedMps != null) 4.0 else 100.0
         val psiVar = if (fix.bearingDeg != null) 0.12 else 9.9 // ~20° known / unknown heading
         ekf.reset(v0, psi0, (fix.accuracyM.toDouble() * fix.accuracyM).coerceAtLeast(1.0), vVar, psiVar)
         lastPropagateMs = nowMs

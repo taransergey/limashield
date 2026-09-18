@@ -1,5 +1,22 @@
 # Changelog
 
+## 0.9.1 — 2026-09-18
+First DR field test (two rides, an iPhone recording the reference track in parallel).
+The Android chip had ZERO real GNSS fixes all day with 13-41 satellites visible —
+genuine L1 suppression the multi-band iPhone survived — so the JAMMED card was
+correct. But the track came out worse than v0.8: ColorOS throttles the IMU sensors
+with the screen off (gaps of 6-31 min mid-ride), the gyroless EKF honestly blew up
+its covariance and froze, and OsmAnd skipped the frozen duplicates — 32 minutes
+without a single recorded point while fresh network fixes were available.
+- **No live IMU → DR bypasses itself**: with sensor silence over 10 s the service
+  pushes the reference fixes directly (exact v0.8 behavior) and re-seeds the engine
+  when the IMU returns. DR now only ever runs when it can actually help.
+- **A degraded (frozen) prediction never masks a live reference**: with fresh
+  network fixes still arriving, the reference is pushed instead of the frozen point.
+- Fixed the instant absurd "IMU SILENT for 9.2e15 s" alert right after sensor
+  registration, and widened the speed prior for speedless network seeds (a moving
+  start looked like an outlier storm: gate/relocate churn).
+
 ## 0.9.0 — 2026-09-17
 **Dead reckoning** (new DR spec, rev 2): under jamming the network gives a fix once
 per 20-30 minutes and the marker used to sit still between them. Now an EKF-CTRV

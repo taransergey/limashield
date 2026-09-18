@@ -532,17 +532,29 @@ class LocationFilterService : Service() {
         val drOn = Prefs.drEnabled(sp) && r.state != FilterState.TRUSTED && sensors?.hasGyro == true
         syncDrSensors(r.state, drOn)
 
+        // Field lesson 2026-09-18: ColorOS throttles SensorManager with the screen
+        // off (IMU gaps of 6-31 min mid-ride). Without the gyro the EKF honestly
+        // blows up its covariance within a minute and freezes — which is WORSE than
+        // v0.8's plain pass-through of every fresh network fix (OsmAnd skips the
+        // frozen duplicates and records nothing). No live IMU → bypass DR entirely.
+        val imuAlive = sensors?.let { it.running && it.silenceMs(nowMs) < 10_000 } == true
+        val drActive = drOn && imuAlive
+        if (drOn && !imuAlive && dr.seeded) dr.reset() // re-seed from a fresh reference when IMU returns
+
         val suppressBlind = r.state == FilterState.BLIND && !Prefs.freezeInBlind(sp)
         val emit = r.emit
         var pushed: Fix? = null
-        if (drOn) {
+        if (drActive) {
             // The FSM's emit becomes a CORRECTION for dead reckoning; the engine
             // dedupes the per-tick repeats itself. BLIND's emit is the FSM's own
             // frozen construct, not a reference — never feed it to the EKF.
             if (emit != null && r.state != FilterState.BLIND) dr.update(emit, nowMs)
             val pred = if (suppressBlind) null else dr.predict(nowMs)
             if (pred != null) {
-                pushed = pred.fix
+                // A degraded (frozen) prediction must never mask a live reference:
+                // with fresh network fixes still arriving the reference IS the best
+                // output (2026-09-18: frozen DR starved OsmAnd for 32 min straight).
+                pushed = if (pred.degraded && emit != null && r.state != FilterState.BLIND) emit else pred.fix
                 ServiceBus.update {
                     it.copy(drAgeSec = pred.extrapolationAgeSec, drAccM = pred.fix.accuracyM, drDegraded = pred.degraded)
                 }

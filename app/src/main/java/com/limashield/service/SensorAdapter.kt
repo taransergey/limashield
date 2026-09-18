@@ -62,6 +62,9 @@ class SensorAdapter(
     fun start() {
         if (running || sm == null) return
         running = true
+        // grace: "silent since registration" counts from now, not from the epoch
+        // (field bug 2026-09-18: an instant absurd 'IMU SILENT for 9.2e15 s' alert)
+        lastEventMs = System.currentTimeMillis()
         haveRotation = false
         gyroSum = 0.0; gyroN = 0
         accIdx = 0; accFilled = 0
