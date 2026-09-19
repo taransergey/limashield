@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.9.2 — 2026-09-20
+A tester's SIM-less phone (no cell positioning at all) got a spoofed Lima fix as its
+very FIRST fix of the day: instant C8 detection worked, but with no reference ever
+recorded the filter fell into BLIND and stayed there for the whole day, silently
+ignoring 38 honest fixes when the spoofing paused.
+- **BLIND with no reference now accepts clean GNSS** through the regular
+  45 s probation instead of waiting forever for a network fix that cannot come.
+- **No-SIM warning**: a phone without a SIM has no cell fallback — the status card
+  and the service log now say so and advise enabling Wi-Fi, which partially
+  substitutes for cell positioning.
+
 ## 0.9.1 — 2026-09-18
 First DR field test (two rides, an iPhone recording the reference track in parallel).
 The Android chip had ZERO real GNSS fixes all day with 13-41 satellites visible —

@@ -28,6 +28,7 @@
     <string name="peek_hint">Проба: слухаю реальний GNSS/мережу…</string>
     <string name="gnss_silent">⚠ GNSS мовчить %1$d с при %2$d видимих супутниках — глушіння?</string>
     <string name="dr_status">Екстраполяція: %1$d с від опори, ±%2$.0f м</string>
+    <string name="no_sim_warning">⚠ Немає SIM-картки: позиції за вежами не буде — під час спуфінгу фільтру нема на що спертися. Увімкніть Wi-Fi, він частково замінює вежі.</string>
     <string name="dr_degraded">(заморожено)</string>
     <string name="mock_hint">Мок активний: %1$s</string>
     <string name="since_time">з %1$s</string>

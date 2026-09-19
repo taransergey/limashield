@@ -145,7 +145,14 @@ class FilterFsm(
                         ev += "GNSS clean but %.1f km from frozen position — waiting for network"
                             .format(java.util.Locale.US, dist / 1000)
                     }
-                } else if (verdict.isSpoofed) {
+                } else if (!verdict.isSpoofed) {
+                    // No reference at all: a SIM-less phone can get spoofed before its
+                    // first honest fix (field case 2026-09-19 — the filter then sat in
+                    // BLIND forever, ignoring 38 honest fixes). Clean GNSS is the only
+                    // signal there is — take it through the regular probation.
+                    recoveringSinceMs = fix.timeMs
+                    moveTo(FilterState.RECOVERING, ev, "GNSS clean, no reference to compare — probation")
+                } else {
                     ev += "GNSS check: spoofing continues ($verdict)"
                 }
             }

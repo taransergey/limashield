@@ -250,6 +250,35 @@ class FilterFsmTest {
     }
 
     @Test
+    fun `телефон без SIM - спуф до первого честного фикса, BLIND без репера принимает чистый GNSS`() {
+        // Field case 2026-09-19: a SIM-less phone (no network provider at all) got a
+        // spoofed fix as its very FIRST fix of the day. lastGood was null, so the
+        // filter used to sit in BLIND forever, ignoring honest fixes.
+        val s = Sim()
+        val warped = Fix(
+            Scenario.LIMA_LAT, Scenario.LIMA_LON, 3f,
+            timeMs = s.now + 550L * 86_400_000, speedMps = 56f, provider = "gps",
+        )
+        var r = s.fsm.onGnss(warped, s.now)
+        assertEquals(FilterState.SPOOFED, r.state) // C8 instant
+        repeat(31) { s.advance(); s.tick() }
+        assertEquals(FilterState.BLIND, s.fsm.state)
+
+        // spoofing pauses; honest fixes with sane time arrive — no reference exists
+        var cur = Scenario.KYIV_LAT to Scenario.KYIV_LON
+        s.advance()
+        r = s.gnss(cur.first, cur.second, speed = 4f)
+        assertEquals(FilterState.RECOVERING, r.state)
+        repeat(46) {
+            s.advance()
+            cur = Scenario.move(cur.first, cur.second, 0.0, 4.0)
+            r = s.gnss(cur.first, cur.second, speed = noisy(4.0, it), bearing = 0f)
+            s.tick()
+        }
+        assertEquals(FilterState.TRUSTED, s.fsm.state)
+    }
+
+    @Test
     fun `GNSS далеко от заморозки не выводит из BLIND`() {
         val s = Sim()
         val (lat, lon) = enterSpoofed(s)

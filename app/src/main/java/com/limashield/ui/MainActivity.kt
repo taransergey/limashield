@@ -52,6 +52,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var b: ActivityMainBinding
     private val adapter = LogAdapter()
     private val timeFmt = SimpleDateFormat("HH:mm:ss", Locale.US)
+    private val hasSim by lazy { com.limashield.util.SetupStatus.hasSim(this) }
 
     private val permLauncher =
         registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) {
@@ -294,6 +295,7 @@ class MainActivity : AppCompatActivity() {
                     append("\n").append(getString(R.string.dr_status, age, ui.drAccM ?: 0f))
                     if (ui.drDegraded) append(" ").append(getString(R.string.dr_degraded))
                 }
+                if (!hasSim) append("\n").append(getString(R.string.no_sim_warning))
             }
         }
         b.cardStatus.setCardBackgroundColor(color)

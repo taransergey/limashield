@@ -43,6 +43,18 @@ object SetupStatus {
         false
     }
 
+    /**
+     * Without a SIM there is no cell positioning: the filter has no reference under
+     * spoofing and freezes (field case 2026-09-19). Wi-Fi partially substitutes —
+     * the warning tells the user to enable it.
+     */
+    fun hasSim(ctx: Context): Boolean = try {
+        val tm = ctx.getSystemService(android.telephony.TelephonyManager::class.java) ?: return true
+        (0..1).any { tm.getSimState(it) == android.telephony.TelephonyManager.SIM_STATE_READY }
+    } catch (_: Exception) {
+        true
+    }
+
     fun batteryExempt(ctx: Context): Boolean = try {
         ctx.getSystemService(PowerManager::class.java).isIgnoringBatteryOptimizations(ctx.packageName)
     } catch (_: Exception) {

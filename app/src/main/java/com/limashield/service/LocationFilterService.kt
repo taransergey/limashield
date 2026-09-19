@@ -209,6 +209,12 @@ class LocationFilterService : Service() {
         if (Prefs.drEnabled(sp) && sensors?.hasGyro != true) {
             EventLog.log(EventLog.Level.WARN, "No gyroscope on this device — dead reckoning unavailable, falling back to fix-repeat")
         }
+        if (!com.limashield.util.SetupStatus.hasSim(this)) {
+            EventLog.log(
+                EventLog.Level.WARN,
+                "No SIM card — no cell positioning, the filter has no reference under spoofing. Enable Wi-Fi: it partially substitutes",
+            )
+        }
 
         scope.launch {
             while (isActive) {

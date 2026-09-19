@@ -32,6 +32,7 @@
     <string name="peek_hint">Probe: sampling real GNSS/network…</string>
     <string name="gnss_silent">⚠ No GNSS fixes for %1$d s while %2$d sats visible — jamming?</string>
     <string name="dr_status">Dead reckoning: %1$d s since last fix, ±%2$.0f m</string>
+    <string name="no_sim_warning">⚠ No SIM card: no cell positioning — under spoofing the filter has nothing to fall back on. Enable Wi-Fi, it partially substitutes.</string>
     <string name="dr_degraded">(frozen)</string>
     <string name="mock_hint">Mock active: %1$s</string>
     <string name="since_time">since %1$s</string>
