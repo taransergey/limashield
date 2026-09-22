@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.9.3 — 2026-09-22
+- The service-start log line now carries the app version. A tester's "new bug"
+  (map stuck in Lima after enabling the service) took forensic log analysis to
+  attribute to a phone still running v0.5.x from September 10 — every shared log
+  zip now identifies its build at a glance.
+
 ## 0.9.2 — 2026-09-20
 A tester's SIM-less phone (no cell positioning at all) got a spoofed Lima fix as its
 very FIRST fix of the day: instant C8 detection worked, but with no reference ever

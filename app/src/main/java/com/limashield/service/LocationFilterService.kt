@@ -205,7 +205,10 @@ class LocationFilterService : Service() {
             it.copy(running = true, state = fsm.state, stateSinceMs = stateSince, mockMode = MockMode.OFF)
         }
         FilterTileService.requestUpdate(this)
-        EventLog.log(EventLog.Level.INFO, "Service started (Android ${Build.VERSION.RELEASE})")
+        // App version in every log: shared zips from testers regularly turn out to be
+        // ancient builds (2026-09-22: a "new bug" was a phone still on v0.5.x)
+        val appVer = runCatching { packageManager.getPackageInfo(packageName, 0).versionName }.getOrNull() ?: "?"
+        EventLog.log(EventLog.Level.INFO, "Service started (Android ${Build.VERSION.RELEASE}, LimaShield $appVer)")
         if (Prefs.drEnabled(sp) && sensors?.hasGyro != true) {
             EventLog.log(EventLog.Level.WARN, "No gyroscope on this device — dead reckoning unavailable, falling back to fix-repeat")
         }
