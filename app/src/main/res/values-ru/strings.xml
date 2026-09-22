@@ -29,6 +29,10 @@
     <string name="gnss_silent">⚠ GNSS молчит %1$d с при %2$d видимых спутниках — глушение?</string>
     <string name="dr_status">Экстраполяция: %1$d с от опоры, ±%2$.0f м</string>
     <string name="no_sim_warning">⚠ Нет SIM-карты: позиции по вышкам не будет — при спуфинге фильтру не на что опереться. Включите Wi-Fi, он частично заменяет вышки.</string>
+    <string name="update_notif_title">Доступна LimaShield %1$s</string>
+    <string name="update_notif_text">Нажмите, чтобы открыть страницу загрузки.</string>
+    <string name="pref_update_check">Проверять обновления</string>
+    <string name="pref_update_check_sum">Раз в сутки спрашивать GitHub о свежем релизе — единственная сетевая активность приложения</string>
     <string name="dr_degraded">(заморожено)</string>
     <string name="mock_hint">Мок активен: %1$s</string>
     <string name="since_time">с %1$s</string>

@@ -334,6 +334,7 @@ class LocationFilterService : Service() {
         checkDeafness(now)
         checkImuHealth(now)
         logTelemetry(now)
+        com.limashield.util.UpdateChecker.maybeCheck(this)
     }
 
     /**

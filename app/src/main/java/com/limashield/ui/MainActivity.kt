@@ -105,6 +105,7 @@ class MainActivity : AppCompatActivity() {
     override fun onResume() {
         super.onResume()
         b.warnMock.isVisible = !SetupStatus.mockAllowed(this)
+        com.limashield.util.UpdateChecker.maybeCheck(this)
         // After a force-killed process a test provider can stay hanging in the system
         // with a frozen point — clean up on every open while the service is not running
         if (!LocationFilterService.isRunning) {

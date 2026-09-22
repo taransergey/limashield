@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.9.4 — 2026-09-22
+- **Update notification**: once a day the app asks the GitHub releases API for the
+  latest version and posts a notification (tap → download page) when a newer one
+  exists. This is the app's first and only network activity — a single GET, nothing
+  else ever leaves the device; off switch in settings. Motivated by testers running
+  two-week-old builds and reporting long-fixed bugs.
+
 ## 0.9.3 — 2026-09-22
 - The service-start log line now carries the app version. A tester's "new bug"
   (map stuck in Lima after enabling the service) took forensic log analysis to

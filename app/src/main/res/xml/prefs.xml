@@ -98,6 +98,11 @@
 
     <PreferenceCategory app:title="@string/prefs_cat_debug">
         <SwitchPreferenceCompat
+            app:key="update_check"
+            app:title="@string/pref_update_check"
+            app:summary="@string/pref_update_check_sum"
+            app:defaultValue="true" />
+        <SwitchPreferenceCompat
             app:key="field_recording"
             app:title="@string/pref_field_rec"
             app:summary="@string/pref_field_rec_sum"
