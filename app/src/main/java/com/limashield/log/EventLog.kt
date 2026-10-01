@@ -38,6 +38,12 @@ object EventLog {
     }
 
     @Synchronized
+    fun clear() {
+        buf.clear()
+        _entries.value = emptyList()
+    }
+
+    @Synchronized
     fun dump(): String {
         val f = SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS", Locale.US)
         return buf.joinToString("\n") { "${f.format(Date(it.ts))} [${it.level}] ${it.msg}" }

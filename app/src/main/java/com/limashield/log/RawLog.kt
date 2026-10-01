@@ -17,5 +17,8 @@ object RawLog {
     }
 
     @Synchronized
+    fun clear() = buf.clear()
+
+    @Synchronized
     fun dump(): String = buf.joinToString("\n")
 }

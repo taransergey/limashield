@@ -93,6 +93,17 @@ object FieldRecorder {
         dir?.listFiles()?.filter { it.isFile && it.length() > 0 }?.sortedBy { it.name } ?: emptyList()
 
     /**
+     * Delete every field file (user-requested reset between test rides, on top of
+     * the 7-day rotation). Serialized with the writers; blocks the caller briefly.
+     * Returns the number of files removed.
+     */
+    fun clearAll(): Int = try {
+        io.submit(Callable { doClearAll() }).get(10, TimeUnit.SECONDS)
+    } catch (_: Exception) {
+        0
+    }
+
+    /**
      * Pack all field files (+extra) into a zip. Runs in the write queue
      * (serialized with write operations); blocks the caller — invoke from Dispatchers.IO.
      * Returns false when there is nothing to pack.
@@ -161,6 +172,16 @@ object FieldRecorder {
             }
         }.onFailure { return false }
         return target.length() > 0
+    }
+
+    @Synchronized
+    private fun doClearAll(): Int {
+        runCatching { rawWriter?.close() }
+        runCatching { imuWriter?.close() }
+        rawWriter = null; rawDay = ""; rawCount = 0
+        imuWriter = null; imuDay = ""; imuCount = 0
+        val d = dir ?: return 0
+        return d.listFiles()?.filter { it.isFile }?.count { runCatching { it.delete() }.getOrDefault(false) } ?: 0
     }
 
     private fun cleanupOld() {

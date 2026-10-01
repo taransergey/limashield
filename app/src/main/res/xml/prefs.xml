@@ -97,6 +97,14 @@
     </PreferenceCategory>
 
     <PreferenceCategory app:title="@string/prefs_cat_debug">
+        <Preference
+            app:key="clear_logs"
+            app:title="@string/pref_clear_logs"
+            app:summary="@string/pref_clear_logs_sum" />
+        <Preference
+            app:key="gnss_cold_start"
+            app:title="@string/pref_gnss_cold_start"
+            app:summary="@string/pref_gnss_cold_start_sum" />
         <SwitchPreferenceCompat
             app:key="update_check"
             app:title="@string/pref_update_check"

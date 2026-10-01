@@ -12,6 +12,9 @@
          per day for the update notification (off switch in settings). Nothing else
          ever leaves the device. -->
     <uses-permission android:name="android.permission.INTERNET" />
+    <!-- GNSS cold start button: lets a receiver poisoned by spoofed assistance data
+         (fake ephemerides/time) throw its cache away -->
+    <uses-permission android:name="android.permission.ACCESS_LOCATION_EXTRA_COMMANDS" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <!-- DR spec §5.4: partial wakelock while dead reckoning is active — vendor
          screen-off throttling must not stop the IMU/EKF between rare fixes -->

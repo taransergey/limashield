@@ -31,6 +31,16 @@
     <string name="no_sim_warning">⚠ Нет SIM-карты: позиции по вышкам не будет — при спуфинге фильтру не на что опереться. Включите Wi-Fi, он частично заменяет вышки.</string>
     <string name="update_notif_title">Доступна LimaShield %1$s</string>
     <string name="update_notif_text">Нажмите, чтобы открыть страницу загрузки.</string>
+    <string name="pref_clear_logs">Сбросить логи</string>
+    <string name="pref_clear_logs_sum">Удалить все полевые записи и список событий — начать следующий тестовый заезд с чистого лога</string>
+    <string name="clear_logs_confirm_title">Сбросить логи?</string>
+    <string name="clear_logs_confirm_text">Все записанные события, сырые фиксы и данные IMU на этом телефоне будут удалены. Если лог ещё нужен — сначала поделитесь им.</string>
+    <string name="clear_logs_confirm_ok">Удалить</string>
+    <string name="clear_logs_done">Логи очищены</string>
+    <string name="pref_gnss_cold_start">Холодный старт GNSS</string>
+    <string name="pref_gnss_cold_start_sum">Стереть кэш вспомогательных данных приёмника. Нужно, когда спутники видны с хорошим сигналом, но подолгу ни один не используется для фикса — спуфинг отравляет этот кэш фальшивыми орбитами и временем, и перезагрузка его не чистит.</string>
+    <string name="gnss_cold_start_done">Данные стёрты — первый фикс под открытым небом может занять несколько минут.</string>
+    <string name="gnss_cold_start_fail">Приёмник на этом телефоне не принял команду.</string>
     <string name="pref_update_check">Проверять обновления</string>
     <string name="pref_update_check_sum">Раз в сутки спрашивать GitHub о свежем релизе — единственная сетевая активность приложения</string>
     <string name="dr_degraded">(заморожено)</string>

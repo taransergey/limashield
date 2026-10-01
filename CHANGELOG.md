@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.9.6 — 2026-10-01
+Side-by-side test under open sky: a Pixel 7 held a 1 Hz fix with 37 satellites used
+while the Realme next to it tracked up to 16 satellites at a healthy 40 dB-Hz and used
+none for a fix — for 12 minutes, and still after a reboot. Weeks of spoofing had
+poisoned the receiver's cached assistance data (fake orbits, a clock +538 days off);
+erasing that cache brought the first real fix within 40 seconds.
+- **GNSS cold start** button (Settings → Debug): erases the receiver's assistance data
+  via `delete_aiding_data` + forced time/XTRA injection. For "satellites visible with
+  a good signal, none used for a fix, reboot does not help".
+- **Reset logs** button (Settings → Debug, with confirmation): deletes all field
+  recordings and the event list so consecutive test rides do not pile up; the fresh
+  log opens with the build version.
+
 ## 0.9.5 — 2026-10-01
 Setup wizard on new Android: a Pixel 7 on Android 17 had developer options on,
 yet the app read the flag as off — newer Android silently returns a filtered
