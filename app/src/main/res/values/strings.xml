@@ -107,6 +107,8 @@
     <string name="onb_step1_desc">The filter needs GPS and network position to detect spoofing. Choose "Allow all the time" — otherwise the system cuts the filter off when the screen is off.</string>
     <string name="onb_step1_btn">Grant</string>
     <string name="onb_step1_btn_bg">Allow all the time</string>
+    <string name="onb_step2_unverifiable">No checkmark although "Developer options" is already on? Newer Android hides this from apps — just go to step 3.</string>
+    <string name="onb_step3_toast_unverified">If "Developer options" opened — find "Select mock location app" and choose LimaShield. If not — do step 2 first.</string>
     <string name="onb_step2_title">2. Developer mode</string>
     <string name="onb_step2_desc">Open About phone and tap “Build number” 7 times until it says you are now a developer.\n%1$s</string>
     <string name="onb_step2_btn">Open About phone</string>

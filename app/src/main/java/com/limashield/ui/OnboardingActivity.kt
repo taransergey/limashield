@@ -74,7 +74,8 @@ class OnboardingActivity : AppCompatActivity() {
     private fun refresh() {
         val loc = SetupStatus.locationGranted(this) && SetupStatus.backgroundLocationGranted(this)
         val mock = SetupStatus.mockAllowed(this)
-        val dev = SetupStatus.devOptionsEnabled(this) || mock
+        val devState = SetupStatus.devOptionsState(this)
+        val dev = devState == SetupStatus.DevOptions.ENABLED || mock
         val bat = SetupStatus.batteryExempt(this)
 
         setCard(b.cardStep1, b.statusStep1, b.btnStep1, loc)
@@ -83,6 +84,13 @@ class OnboardingActivity : AppCompatActivity() {
             else R.string.onb_step1_btn
         )
         setCard(b.cardStep2, b.statusStep2, b.btnStep2, dev)
+        // Newer Android hides the flag from third-party apps: a Pixel 7 on Android 17
+        // read 0 with the menu on (2026-10-01) — no exception, just a filtered value.
+        // "Off" and "hidden" are indistinguishable, so the hint is shown whenever the
+        // checkmark is missing; a genuinely unreadable read gets the ❔ as well.
+        b.descStep2.text = getString(R.string.onb_step2_desc, getString(SetupStatus.buildNumberHintRes())) +
+            if (dev) "" else "\n" + getString(R.string.onb_step2_unverifiable)
+        if (!dev && devState == SetupStatus.DevOptions.UNKNOWN) b.statusStep2.text = "❔"
         setCard(b.cardStep3, b.statusStep3, b.btnStep3, mock)
         setCard(b.cardStep4, b.statusStep4, b.btnStep4, bat)
 
@@ -118,13 +126,18 @@ class OnboardingActivity : AppCompatActivity() {
             Toast.makeText(this, R.string.onb_step3_need_step1, Toast.LENGTH_LONG).show()
             return
         }
-        if (!SetupStatus.devOptionsEnabled(this)) {
-            Toast.makeText(this, R.string.onb_step3_need_step2, Toast.LENGTH_LONG).show()
-            return
-        }
+        // Never hard-block on the developer-options flag: on a Pixel 7 / Android 17 the
+        // menu was on while the flag read as off, and the wizard dead-ended here
+        // (2026-10-01). Hint when it looks disabled, but open the screen regardless —
+        // the system itself shows the right thing in both cases.
+        val devState = SetupStatus.devOptionsState(this)
         try {
             startActivity(Intent(Settings.ACTION_APPLICATION_DEVELOPMENT_SETTINGS))
-            Toast.makeText(this, R.string.onb_step3_toast, Toast.LENGTH_LONG).show()
+            Toast.makeText(
+                this,
+                if (devState == SetupStatus.DevOptions.ENABLED) R.string.onb_step3_toast else R.string.onb_step3_toast_unverified,
+                Toast.LENGTH_LONG,
+            ).show()
         } catch (_: Exception) {
             Toast.makeText(this, R.string.devsettings_error, Toast.LENGTH_LONG).show()
         }

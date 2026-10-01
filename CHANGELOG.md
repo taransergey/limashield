@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.9.5 — 2026-10-01
+Setup wizard on new Android: a Pixel 7 on Android 17 had developer options on,
+yet the app read the flag as off — newer Android silently returns a filtered
+value to third-party apps — and the wizard dead-ended at step 3 ("do step 2 first").
+- Step 3 never hard-blocks on the developer-options flag any more: it opens the
+  developer settings screen regardless and only adapts its hint.
+- Step 2 explains the missing checkmark ("newer Android hides this — go to step 3")
+  and shows ❔ when the read actually fails.
+
 ## 0.9.4 — 2026-09-22
 - **Update notification**: once a day the app asks the GitHub releases API for the
   latest version and posts a notification (tap → download page) when a newer one

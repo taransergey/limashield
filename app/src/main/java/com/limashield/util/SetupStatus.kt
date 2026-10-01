@@ -24,11 +24,30 @@ object SetupStatus {
             android.Manifest.permission.ACCESS_BACKGROUND_LOCATION
         ) == android.content.pm.PackageManager.PERMISSION_GRANTED
 
-    fun devOptionsEnabled(ctx: Context): Boolean = try {
-        Settings.Global.getInt(ctx.contentResolver, Settings.Global.DEVELOPMENT_SETTINGS_ENABLED, 0) == 1
-    } catch (_: Exception) {
-        false
+    enum class DevOptions { ENABLED, DISABLED, UNKNOWN }
+
+    /**
+     * Tri-state on purpose: newer Android builds may refuse the read (Pixel 7 on
+     * Android 17, 2026-10-01: developer options on, the flag unreadable) — that
+     * must never block the wizard, only soften its checkmark.
+     */
+    fun devOptionsState(ctx: Context): DevOptions = try {
+        if (Settings.Global.getInt(ctx.contentResolver, Settings.Global.DEVELOPMENT_SETTINGS_ENABLED) == 1) {
+            DevOptions.ENABLED
+        } else {
+            DevOptions.DISABLED
+        }
+    } catch (_: Settings.SettingNotFoundException) {
+        DevOptions.DISABLED // never toggled on this device
+    } catch (e: Exception) {
+        com.limashield.log.EventLog.log(
+            com.limashield.log.EventLog.Level.WARN,
+            "Developer-options flag unreadable on this Android: ${e.javaClass.simpleName}: ${e.message}",
+        )
+        DevOptions.UNKNOWN
     }
+
+    fun devOptionsEnabled(ctx: Context): Boolean = devOptionsState(ctx) == DevOptions.ENABLED
 
     fun mockAllowed(ctx: Context): Boolean = try {
         val ops = ctx.getSystemService(AppOpsManager::class.java)
